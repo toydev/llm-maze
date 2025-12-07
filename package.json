@@ -8,6 +8,7 @@
   "scripts": {
     "lint": "eslint --fix .",
     "typecheck": "tsc --noEmit",
+    "start": "vite-node src/main.ts",
     "test": "vitest",
     "test:diff": "diff -r test/snapshot/actual test/snapshot/expected || echo 'スナップショットに差分があります。内容確認後に test:update を実行してください。'",
     "test:update": "VITEST_UPDATE_SNAPSHOTS=true vitest"
@@ -16,6 +17,7 @@
     "@langchain/google-genai": "^1.0.3",
     "@langchain/langgraph": "^1.0.4",
     "@langchain/ollama": "^1.0.3",
+    "dotenv": "^17.2.3",
     "loglevel": "^1.9.2",
     "yaml": "^2.8.2",
     "zod-to-json-schema": "^3.25.0"
