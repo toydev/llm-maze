@@ -1,7 +1,7 @@
 // src/runner/MazeRunner.ts
 
 import { Maze } from '@/maze/Maze';
-import { Position, CellType } from '@/maze/types';
+import { Position } from '@/maze/types';
 import { PromptStrategy } from './promptBuilder';
 import LLM from '@/llm/LLM';
 import { MoveAction, MoveActionSchema } from './outputParser';
@@ -52,9 +52,10 @@ export class MazeRunner {
 
       // 次の位置が有効かチェック
       if (!this.isValidMove(nextPosition)) {
-        logger.warn(`Invalid move suggested by LLM: to (${nextPosition.x}, ${nextPosition.y}). This is a wall or out of bounds.`);
-        // ここで戦略を考える（例：エラーをプロンプトに含めて再試行、など）
-        // 今回は単純に終了する
+        logger.warn(
+          `Invalid move suggested by LLM: to (${nextPosition.x}, ${nextPosition.y}). This is a wall or out of bounds.`,
+        );
+        // 戦略：単純に終了する
         break;
       }
 

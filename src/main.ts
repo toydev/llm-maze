@@ -16,7 +16,7 @@ async function main() {
   logger.info('Maze Exploration Experiment Start!');
 
   // 1. 迷路ファイルを読み込む
-  const mazeFilePath = path.join(process.cwd(), 'mazes', '5x5_simple.txt');
+  const mazeFilePath = path.join(process.cwd(), 'mazes', '10x10_complex.txt');
   let mazeLayout: string[];
   try {
     const fileContent = await fs.readFile(mazeFilePath, 'utf-8');

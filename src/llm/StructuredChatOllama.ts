@@ -30,7 +30,8 @@ export class StructuredChatOllama {
   withStructuredOutput<T extends z.ZodType>(schema: T) {
     const model = this.model;
     const baseUrl = this.baseUrl;
-    const format = zodToJsonSchema(schema as any);
+    // const format = zodToJsonSchema(schema as any); // スキーマ生成を無効化
+    const format = 'json'; // 単純な 'json' 形式を要求
 
     // RunnableLambda で Runnable として振る舞うオブジェクトを返す
     return new RunnableLambda({
@@ -48,10 +49,18 @@ export class StructuredChatOllama {
 
         // JSON パースして型付きオブジェクトを返す
         if (response?.message?.content && typeof response.message.content === 'string') {
-          return JSON.parse(response.message.content) as z.infer<T>;
+          try {
+            const parsedJson = JSON.parse(response.message.content);
+            return schema.parse(parsedJson) as z.infer<T>; // Zodスキーマで検証
+          } catch (e) {
+            console.error('Failed to parse or validate LLM response:', e);
+            // エラー時でも後続の処理が止まらないように、推論させた型で空のオブジェクトなどを返すか、エラーを投げるか選択
+            // ここではエラーを投げて、呼び出し元で対処させる
+            throw new Error('LLM response is not a valid JSON or does not match the schema.');
+          }
         }
 
-        return response.message.content;
+        throw new Error('LLM did not return any content.');
       },
     });
   }
