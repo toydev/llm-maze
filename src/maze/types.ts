@@ -22,3 +22,8 @@ export interface Position {
   x: number;
   y: number;
 }
+
+/**
+ * LLMの行動選択肢
+ */
+export type Move = 'up' | 'down' | 'left' | 'right';

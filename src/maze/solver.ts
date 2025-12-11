@@ -1,7 +1,99 @@
-// src/maze/solver.ts
 
 import { Maze } from './Maze';
-import { Position } from './types';
+import { Position, Move } from './types';
+
+// ... (既存の solveWithAStar 関数はそのまま) ...
+
+/**
+ * ゴールからの距離を格納するマップの型
+ * key: "x,y", value: 距離
+ */
+type DistanceMap = Map<string, number>;
+
+/**
+ * 各マスからの最適な次の一手を格納するマップの型
+ * key: "x,y", value: ['up', 'down', 'left', 'right'] の配列
+ */
+export type OptimalMoveMap = Map<string, Move[]>;
+
+/**
+ * 幅優先探索(BFS)を用いて、ゴールから全ての到達可能なマスへの最短距離を計算します。
+ * @param maze 迷路オブジェクト
+ * @returns ゴールからの距離をマッピングしたDistanceMap
+ */
+function calculateDistancesFromEnd(maze: Maze): DistanceMap {
+  const distances: DistanceMap = new Map();
+  const queue: Position[] = [maze.endPosition];
+  const endKey = `${maze.endPosition.x},${maze.endPosition.y}`;
+
+  distances.set(endKey, 0);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const currentKey = `${current.x},${current.y}`;
+    const currentDistance = distances.get(currentKey)!;
+
+    const neighbors: Position[] = [
+      { x: current.x, y: current.y - 1 }, // up
+      { x: current.x, y: current.y + 1 }, // down
+      { x: current.x - 1, y: current.y }, // left
+      { x: current.x + 1, y: current.y }, // right
+    ];
+
+    for (const neighbor of neighbors) {
+      const neighborKey = `${neighbor.x},${neighbor.y}`;
+      if (maze.isTraversable(neighbor) && !distances.has(neighborKey)) {
+        distances.set(neighborKey, currentDistance + 1);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return distances;
+}
+
+/**
+ * 迷路の各マスからゴールに向かうための最適な次の一手（模範解答）のマップを生成します。
+ * @param maze 迷路オブジェクト
+ * @returns 各マスの模範解答をマッピングしたOptimalMoveMap
+ */
+export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
+  const distances = calculateDistancesFromEnd(maze);
+  const optimalMoves: OptimalMoveMap = new Map();
+
+  for (const [posKey, distance] of distances.entries()) {
+    const [x, y] = posKey.split(',').map(Number);
+    const currentPos = { x, y };
+    const moves: Move[] = [];
+
+    // Up
+    const upPos = { x, y: y - 1 };
+    if (distances.get(`${upPos.x},${upPos.y}`) === distance - 1) {
+      moves.push('up');
+    }
+    // Down
+    const downPos = { x, y: y + 1 };
+    if (distances.get(`${downPos.x},${downPos.y}`) === distance - 1) {
+      moves.push('down');
+    }
+    // Left
+    const leftPos = { x: x - 1, y };
+    if (distances.get(`${leftPos.x},${leftPos.y}`) === distance - 1) {
+      moves.push('left');
+    }
+    // Right
+    const rightPos = { x: x + 1, y };
+    if (distances.get(`${rightPos.x},${rightPos.y}`) === distance - 1) {
+      moves.push('right');
+    }
+
+    if (moves.length > 0) {
+      optimalMoves.set(posKey, moves);
+    }
+  }
+
+  return optimalMoves;
+}
 
 // A*探索用のノード
 interface Node {
