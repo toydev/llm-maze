@@ -96,9 +96,7 @@ async function main() {
   let mazeFiles: string[] = [];
   const mazeFilePath = process.argv[3];
 
-  if (mazeFilePath) {
-    mazeFiles = [mazeFilePath];
-  } else {
+  if (!mazeFilePath || mazeFilePath.toLowerCase() === 'all') {
     const mazeDir = './mazes';
     try {
       mazeFiles = (await fs.readdir(mazeDir))
@@ -108,6 +106,8 @@ async function main() {
       logger.error('Could not read the "mazes" directory.', error);
       return;
     }
+  } else {
+    mazeFiles = [mazeFilePath];
   }
 
   if (mazeFiles.length === 0) {
@@ -115,10 +115,28 @@ async function main() {
     return;
   }
 
-  const strategies: PromptStrategy[] = [new SimplePromptStrategy(), new GraphPromptStrategy()];
+  const strategiesMap = new Map<string, PromptStrategy>([
+    ['SimplePromptStrategy', new SimplePromptStrategy()],
+    ['GraphPromptStrategy', new GraphPromptStrategy()],
+  ]);
+
+  let strategiesToEvaluate: PromptStrategy[] = [];
+  const strategyName = process.argv[4];
+
+  if (!strategyName || strategyName.toLowerCase() === 'all') {
+    strategiesToEvaluate = Array.from(strategiesMap.values());
+  } else {
+    const selectedStrategy = strategiesMap.get(strategyName);
+    if (selectedStrategy) {
+      strategiesToEvaluate = [selectedStrategy];
+    } else {
+      logger.error(`Unknown strategy: ${strategyName}. Available strategies are: ${Array.from(strategiesMap.keys()).join(', ')}`);
+      return;
+    }
+  }
 
   for (const mazeFile of mazeFiles) {
-    for (const strategy of strategies) {
+    for (const strategy of strategiesToEvaluate) {
       await evaluateStrategy(mazeFile, strategy, process.argv[2]);
     }
   }
