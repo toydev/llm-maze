@@ -93,7 +93,28 @@ async function main() {
     process.argv[2] = 'ollama:gemma3:latest';
   }
 
-  const mazeFiles = ['mazes/5x5_simple.txt', 'mazes/10x10_complex.txt'];
+  let mazeFiles: string[] = [];
+  const mazeFilePath = process.argv[3];
+
+  if (mazeFilePath) {
+    mazeFiles = [mazeFilePath];
+  } else {
+    const mazeDir = './mazes';
+    try {
+      mazeFiles = (await fs.readdir(mazeDir))
+        .filter(file => file.endsWith('.txt'))
+        .map(file => `${mazeDir}/${file}`);
+    } catch (error) {
+      logger.error('Could not read the "mazes" directory.', error);
+      return;
+    }
+  }
+
+  if (mazeFiles.length === 0) {
+    logger.warn('No maze files found to evaluate.');
+    return;
+  }
+
   const strategies: PromptStrategy[] = [new SimplePromptStrategy(), new GraphPromptStrategy()];
 
   for (const mazeFile of mazeFiles) {
