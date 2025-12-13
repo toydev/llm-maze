@@ -43,7 +43,7 @@ export class MazeRunner {
 
       // LLMに次の手を問い合わせる
       const structuredLlm = this.llm.withStructuredOutput(MoveActionSchema);
-      const llmResponse = await structuredLlm.invoke(prompt);
+      const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
       logger.debug(`Step ${step}: LLM response received.`);
       logger.trace(llmResponse);
 

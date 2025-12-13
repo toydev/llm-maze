@@ -1,9 +1,9 @@
 import { BaseLanguageModelInput } from '@langchain/core/language_models/base';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatOllama } from '@langchain/ollama';
 import { z } from 'zod';
 
 import { llmConfig } from '@/llm/LLMConfig';
-import { StructuredChatOllama } from '@/llm/StructuredChatOllama';
 
 export default class LLM {
   static llms: Record<string, LLM> = {};
@@ -23,7 +23,7 @@ export default class LLM {
         // 設定があればそれを使用、なければmodelNameをそのまま使用
         const config = llmConfig.ollama[modelName];
         const actualModel = config?.model ?? modelName;
-        result = new LLM(new StructuredChatOllama({ model: actualModel }));
+        result = new LLM(new ChatOllama({ model: actualModel }));
         break;
       }
       case 'gemini': {
@@ -44,9 +44,9 @@ export default class LLM {
     return result;
   }
 
-  private llm: ChatGoogleGenerativeAI | StructuredChatOllama;
+  private llm: ChatGoogleGenerativeAI | ChatOllama;
 
-  constructor(llm: ChatGoogleGenerativeAI | StructuredChatOllama) {
+  constructor(llm: ChatGoogleGenerativeAI | ChatOllama) {
     this.llm = llm;
   }
 
@@ -63,11 +63,7 @@ export default class LLM {
    * - 戻り値は両者とも Runnable を返すため、使用側では問題なく動作する
    */
   withStructuredOutput<T extends z.ZodType>(schema: T) {
-    if (this.llm instanceof StructuredChatOllama) {
-      return this.llm.withStructuredOutput(schema);
-    } else {
-      return this.llm.withStructuredOutput(schema);
-    }
+    return this.llm.withStructuredOutput(schema);
   }
 
   /**

@@ -2,10 +2,9 @@
 
 import fs from 'fs/promises';
 import { Maze } from '@/maze/Maze';
-import { createOptimalMoveMap, OptimalMoveMap } from '@/maze/solver';
-import { Position, Move } from '@/maze/types';
+import { createOptimalMoveMap } from '@/maze/solver';
+import { Position } from '@/maze/types';
 import LLM from '@/llm/LLM';
-import { StructuredChatOllama } from '@/llm/StructuredChatOllama';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy } from '@/runner/promptBuilder';
 import { MoveActionSchema } from '@/runner/outputParser';
 import { createLogger } from '@/logger/Logger';
@@ -16,26 +15,29 @@ const logger = createLogger('evaluate');
  * LLMの判断と模範解答を比較し、正解率を評価する関数
  * @param mazeFile 評価対象の迷路ファイルパス
  * @param strategy 使用するプロンプト戦略
+ * @param modelName 使用するLLMのモデル名
  */
-async function evaluateStrategy(mazeFile: string, strategy: PromptStrategy) {
+async function evaluateStrategy(mazeFile: string, strategy: PromptStrategy, modelName: string) {
   logger.info(`Starting evaluation for maze: ${mazeFile}`);
   logger.info(`Using prompt strategy: ${strategy.constructor.name}`);
+  logger.info(`Using model: ${modelName}`);
 
   // 1. 迷路の読み込みと準備
   const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter(line => line.length > 0);
   const maze = new Maze(mazeLayout);
   const optimalMoveMap = createOptimalMoveMap(maze);
 
-  const llm = new LLM(new StructuredChatOllama({ model: 'llama3' }));
+  const llm = LLM.get(modelName);
+  if (!llm) {
+    logger.error(`Failed to get LLM instance for model: ${modelName}`);
+    return;
+  }
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
   let totalPositions = 0;
   let correctMoves = 0;
 
   // 2. 評価ループ
-  // TODO: ここに評価対象のポジションを決定するロジックを追加
-  //       - 最短経路上の点のみを対象とするか
-  //       - 到達可能な全ての点を対象とするか
   const evaluationPositions = Array.from(optimalMoveMap.keys());
   totalPositions = evaluationPositions.length;
 
@@ -52,7 +54,7 @@ async function evaluateStrategy(mazeFile: string, strategy: PromptStrategy) {
     // 3. LLMの推論を実行
     const prompt = strategy.build(maze, history);
     try {
-      const llmResponse = await structuredLlm.invoke(prompt);
+      const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
       const llmMove = llmResponse.move;
 
       // 4. 結果の比較
@@ -73,6 +75,7 @@ async function evaluateStrategy(mazeFile: string, strategy: PromptStrategy) {
   const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
   logger.info('--- Evaluation Summary ---');
   logger.info(`Maze: ${mazeFile}`);
+  logger.info(`Model: ${modelName}`);
   logger.info(`Prompt Strategy: ${strategy.constructor.name}`);
   logger.info(`Total positions evaluated: ${totalPositions}`);
   logger.info(`Correct moves: ${correctMoves}`);
@@ -84,12 +87,18 @@ async function evaluateStrategy(mazeFile: string, strategy: PromptStrategy) {
  * メイン実行関数
  */
 async function main() {
+  const modelName = process.argv[2];
+  if (!modelName) {
+    logger.warn('No model name provided. Defaulting to "ollama:gemma3:latest"');
+    process.argv[2] = 'ollama:gemma3:latest';
+  }
+
   const mazeFiles = ['mazes/5x5_simple.txt', 'mazes/10x10_complex.txt'];
   const strategies: PromptStrategy[] = [new SimplePromptStrategy(), new GraphPromptStrategy()];
 
   for (const mazeFile of mazeFiles) {
     for (const strategy of strategies) {
-      await evaluateStrategy(mazeFile, strategy);
+      await evaluateStrategy(mazeFile, strategy, process.argv[2]);
     }
   }
 }
