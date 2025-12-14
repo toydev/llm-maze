@@ -2,6 +2,7 @@
 
 # application
 /log/
+/output/
 
 # dependencies
 /node_modules
