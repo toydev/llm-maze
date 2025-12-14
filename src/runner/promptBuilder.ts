@@ -25,7 +25,7 @@ Maze:
 ${mazeString}
 
 You have visited the following positions in order:
-${history.map(p => `(${p.x}, ${p.y})`).join(' -> ')}
+${history.map((p) => `(${p.x}, ${p.y})`).join(' -> ')}
 
 What is your next move? You can only move to adjacent (not diagonal) walkable paths.
 Return your answer as a JSON object with a "move" key, which can be one of "up", "down", "left", or "right".
@@ -96,7 +96,7 @@ Maze Graph:
 ${graphString}
 
 You have visited the following positions in order:
-${history.map(p => `(${p.x}, ${p.y})`).join(' -> ')}
+${history.map((p) => `(${p.x}, ${p.y})`).join(' -> ')}
 
 Based on the graph, what is your next move from your current position?
 You can only move to an adjacent node connected by an edge.

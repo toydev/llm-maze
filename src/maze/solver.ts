@@ -1,6 +1,5 @@
-
-import { Maze } from './Maze';
-import { Position, Move } from './types';
+import { Maze } from '@/maze/Maze';
+import { Position, Move } from '@/maze/types';
 
 // ... (既存の solveWithAStar 関数はそのまま) ...
 
@@ -63,7 +62,6 @@ export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
 
   for (const [posKey, distance] of distances.entries()) {
     const [x, y] = posKey.split(',').map(Number);
-    const currentPos = { x, y };
     const moves: Move[] = [];
 
     // Up
@@ -175,7 +173,7 @@ export function solveWithAStar(maze: Maze): Position[] | null {
       const fScore = gScore + hScore;
 
       // openListに既に存在し、より良い経路でない場合はスキップ
-      const existingNode = openList.find(node => node.position.x === nextPos.x && node.position.y === nextPos.y);
+      const existingNode = openList.find((node) => node.position.x === nextPos.x && node.position.y === nextPos.y);
       if (existingNode && gScore >= existingNode.g) {
         continue;
       }

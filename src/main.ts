@@ -2,15 +2,16 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+
 import 'dotenv/config';
-import { createLogger } from './logger/Logger';
-import { Maze } from './maze/Maze';
+import LLM from '@/llm/LLM';
+import { createLogger } from '@/logger/Logger';
+import { Maze } from '@/maze/Maze';
+import { solveWithAStar } from '@/maze/solver';
+import { MazeRunner } from '@/runner/MazeRunner';
+import { SimplePromptStrategy } from '@/runner/promptBuilder';
 
 const logger = createLogger('main');
-import { solveWithAStar } from './maze/solver';
-import LLM from './llm/LLM';
-import { SimplePromptStrategy } from './runner/promptBuilder';
-import { MazeRunner } from './runner/MazeRunner';
 
 async function main() {
   logger.info('Maze Exploration Experiment Start!');
@@ -59,7 +60,7 @@ async function main() {
   // 5. 結果を比較・表示
   logger.info('----- Run Finished -----');
   if (llmPath) {
-    logger.info('Path found by LLM:', llmPath.map(p => `(${p.x}, ${p.y})`).join(' -> '));
+    logger.info('Path found by LLM:', llmPath.map((p) => `(${p.x}, ${p.y})`).join(' -> '));
   } else {
     logger.error('LLM failed to find a path.');
   }
@@ -70,6 +71,6 @@ async function main() {
   }
 }
 
-main().catch(error => {
+main().catch((error) => {
   logger.error('An unexpected error occurred:', error);
 });

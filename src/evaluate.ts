@@ -1,148 +1,256 @@
 // src/evaluate.ts
 
 import fs from 'fs/promises';
-import { Maze } from '@/maze/Maze';
-import { createOptimalMoveMap } from '@/maze/solver';
-import { Position } from '@/maze/types';
-import LLM from '@/llm/LLM';
-import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy } from '@/runner/promptBuilder';
-import { MoveActionSchema } from '@/runner/outputParser';
+import path from 'path';
+
+import yaml from 'yaml';
+
 import { createLogger } from '@/logger/Logger';
+import { Move, Position } from '@/maze/types';
 
 const logger = createLogger('evaluate');
 
+// execute.ts と共通の型定義
+type PositionResult = {
+  position: Position;
+  isCorrect: boolean;
+  llmMove: Move;
+  optimalMoves: Move[];
+};
+
+type EvaluationResult = {
+  mazeFile: string;
+  modelName: string;
+  strategyName: string;
+  totalPositions: number;
+  correctMoves: number;
+  accuracy: number;
+  results: PositionResult[];
+};
+
+// 集計用の型定義
+type AggregatedResult = {
+  totalRuns: number;
+  totalCorrectMoves: number;
+  totalPositions: number;
+  averageAccuracy: number;
+  positionalCorrectCounts: Map<string, number>; // key: "x,y"
+  positionalTotalCounts: Map<string, number>; // key: "x,y"
+  mazeLayout: string[];
+};
+
+// Map<modelName, Map<strategyName, Map<mazeFile, AggregatedResult>>>
+type Summary = Map<string, Map<string, Map<string, AggregatedResult>>>;
+
 /**
- * LLMの判断と模範解答を比較し、正解率を評価する関数
- * @param mazeFile 評価対象の迷路ファイルパス
- * @param strategy 使用するプロンプト戦略
- * @param modelName 使用するLLMのモデル名
+ * outputディレクトリからすべてのYAMLファイルを再帰的に検索する
+ * @param dir 検索を開始するディレクトリ
+ * @returns YAMLファイルのパスの配列
  */
-async function evaluateStrategy(mazeFile: string, strategy: PromptStrategy, modelName: string) {
-  logger.info(`Starting evaluation for maze: ${mazeFile}`);
-  logger.info(`Using prompt strategy: ${strategy.constructor.name}`);
-  logger.info(`Using model: ${modelName}`);
-
-  // 1. 迷路の読み込みと準備
-  const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter(line => line.length > 0);
-  const maze = new Maze(mazeLayout);
-  const optimalMoveMap = createOptimalMoveMap(maze);
-
-  const llm = LLM.get(modelName);
-  if (!llm) {
-    logger.error(`Failed to get LLM instance for model: ${modelName}`);
-    return;
-  }
-  const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
-
-  let totalPositions = 0;
-  let correctMoves = 0;
-
-  // 2. 評価ループ
-  const evaluationPositions = Array.from(optimalMoveMap.keys());
-  totalPositions = evaluationPositions.length;
-
-  logger.info(`Evaluating ${totalPositions} positions...`);
-
-  for (const posKey of evaluationPositions) {
-    const [x, y] = posKey.split(',').map(Number);
-    const currentPos: Position = { x, y };
-    const correctMoveSet = new Set(optimalMoveMap.get(posKey));
-
-    // LLMに判断させるための履歴を作成（ここでは現在の位置のみ）
-    const history: Position[] = [currentPos];
-
-    // 3. LLMの推論を実行
-    const prompt = strategy.build(maze, history);
-    try {
-      const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
-      const llmMove = llmResponse.move;
-
-      // 4. 結果の比較
-      if (correctMoveSet.has(llmMove)) {
-        correctMoves++;
-        logger.debug(`[${posKey}] Correct: LLM chose '${llmMove}' from [${Array.from(correctMoveSet).join(', ')}]`);
-      } else {
-        logger.warn(
-          `[${posKey}] Incorrect: LLM chose '${llmMove}', but optimal was [${Array.from(correctMoveSet).join(', ')}]`,
-        );
+async function findYamlFiles(dir: string): Promise<string[]> {
+  let files: string[] = [];
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files = files.concat(await findYamlFiles(fullPath));
+      } else if (entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))) {
+        files.push(fullPath);
       }
-    } catch (error) {
-      logger.error(`[${posKey}] Error during LLM invocation:`, error);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      logger.error(`Error reading directory ${dir}:`, error);
     }
   }
-
-  // 5. 結果の表示
-  const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
-  logger.info('--- Evaluation Summary ---');
-  logger.info(`Maze: ${mazeFile}`);
-  logger.info(`Model: ${modelName}`);
-  logger.info(`Prompt Strategy: ${strategy.constructor.name}`);
-  logger.info(`Total positions evaluated: ${totalPositions}`);
-  logger.info(`Correct moves: ${correctMoves}`);
-  logger.info(`Accuracy: ${accuracy.toFixed(2)}%`);
-  logger.info('--------------------------');
+  return files;
 }
 
 /**
- * メイン実行関数
+ * すべての評価結果を読み込んでパースする
+ * @returns パースされた評価結果の配列
  */
-async function main() {
-  const modelName = process.argv[2];
-  if (!modelName) {
-    logger.warn('No model name provided. Defaulting to "ollama:gemma3:latest"');
-    process.argv[2] = 'ollama:gemma3:latest';
+async function loadResults(): Promise<EvaluationResult[]> {
+  const outputDir = './output';
+  const yamlFiles = await findYamlFiles(outputDir);
+  if (yamlFiles.length === 0) {
+    logger.warn(`No YAML result files found in ${outputDir}.`);
+    return [];
   }
 
-  let mazeFiles: string[] = [];
-  const mazeFilePath = process.argv[3];
-
-  if (!mazeFilePath || mazeFilePath.toLowerCase() === 'all') {
-    const mazeDir = './mazes';
+  const results: EvaluationResult[] = [];
+  for (const file of yamlFiles) {
     try {
-      mazeFiles = (await fs.readdir(mazeDir))
-        .filter(file => file.endsWith('.txt'))
-        .map(file => `${mazeDir}/${file}`);
+      const content = await fs.readFile(file, 'utf-8');
+      const data = yaml.parse(content) as EvaluationResult;
+      results.push(data);
     } catch (error) {
-      logger.error('Could not read the "mazes" directory.', error);
-      return;
+      logger.error(`Failed to parse YAML file ${file}:`, error);
     }
-  } else {
-    mazeFiles = [mazeFilePath];
+  }
+  return results;
+}
+
+/**
+ * 結果を集計する
+ * @param results 評価結果の配列
+ * @returns 集計されたサマリー
+ */
+async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
+  const summary: Summary = new Map();
+
+  for (const res of results) {
+    if (!summary.has(res.modelName)) {
+      summary.set(res.modelName, new Map());
+    }
+    const modelSummary = summary.get(res.modelName)!;
+
+    if (!modelSummary.has(res.strategyName)) {
+      modelSummary.set(res.strategyName, new Map());
+    }
+    const strategySummary = modelSummary.get(res.strategyName)!;
+
+    if (!strategySummary.has(res.mazeFile)) {
+      const mazeLayout = (await fs.readFile(res.mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
+      strategySummary.set(res.mazeFile, {
+        totalRuns: 0,
+        totalCorrectMoves: 0,
+        totalPositions: 0,
+        averageAccuracy: 0,
+        positionalCorrectCounts: new Map(),
+        positionalTotalCounts: new Map(),
+        mazeLayout,
+      });
+    }
+    const agg = strategySummary.get(res.mazeFile)!;
+
+    agg.totalRuns++;
+    agg.totalCorrectMoves += res.correctMoves;
+    agg.totalPositions += res.totalPositions;
+
+    for (const posRes of res.results) {
+      const key = `${posRes.position.x},${posRes.position.y}`;
+      agg.positionalTotalCounts.set(key, (agg.positionalTotalCounts.get(key) ?? 0) + 1);
+      if (posRes.isCorrect) {
+        agg.positionalCorrectCounts.set(key, (agg.positionalCorrectCounts.get(key) ?? 0) + 1);
+      }
+    }
   }
 
-  if (mazeFiles.length === 0) {
-    logger.warn('No maze files found to evaluate.');
+  // 平均正解率を計算
+  for (const modelMap of summary.values()) {
+    for (const strategyMap of modelMap.values()) {
+      for (const agg of strategyMap.values()) {
+        agg.averageAccuracy = agg.totalPositions > 0 ? (agg.totalCorrectMoves / agg.totalPositions) * 100 : 0;
+      }
+    }
+  }
+
+  return summary;
+}
+
+/**
+ * 集計サマリーをテーブル形式で表示する
+ * @param summary 集計サマリー
+ */
+function printSummaryTable(summary: Summary): void {
+  const models = Array.from(summary.keys()).sort();
+  const allStrategies = new Set<string>();
+  summary.forEach((modelMap) => modelMap.forEach((_, strategy) => allStrategies.add(strategy)));
+  const strategies = Array.from(allStrategies).sort();
+
+  // ヘッダー
+  let header = 'Model'.padEnd(25);
+  strategies.forEach((stg) => (header += stg.padEnd(25)));
+  console.log(header);
+
+  // データ行
+  models.forEach((model) => {
+    let row = model.padEnd(25);
+    const modelMap = summary.get(model)!;
+    strategies.forEach((stg) => {
+      const strategyMap = modelMap.get(stg);
+      if (strategyMap) {
+        let totalCorrect = 0;
+        let totalPositions = 0;
+        strategyMap.forEach((agg) => {
+          totalCorrect += agg.totalCorrectMoves;
+          totalPositions += agg.totalPositions;
+        });
+        const overallAccuracy = totalPositions > 0 ? (totalCorrect / totalPositions) * 100 : 0;
+        row += `${overallAccuracy.toFixed(2)}%`.padEnd(25);
+      } else {
+        row += 'N/A'.padEnd(25);
+      }
+    });
+    console.log(row);
+  });
+}
+
+/**
+ * マスごとの正解率をグリッドで表示する
+ * @param summary 集計サマリー
+ */
+function printGridPerformance(summary: Summary): void {
+  const models = Array.from(summary.keys()).sort();
+  models.forEach((model) => {
+    const modelMap = summary.get(model)!;
+    const strategies = Array.from(modelMap.keys()).sort();
+    strategies.forEach((stg) => {
+      const strategyMap = modelMap.get(stg)!;
+      const mazeFiles = Array.from(strategyMap.keys()).sort();
+      mazeFiles.forEach((mazeFile) => {
+        const agg = strategyMap.get(mazeFile)!;
+        console.log(`\n--- Grid Performance: ${model} / ${stg} (${mazeFile}) ---`);
+
+        const grid = agg.mazeLayout.map((row) => row.split(''));
+
+        for (let y = 0; y < grid.length; y++) {
+          for (let x = 0; x < grid[y].length; x++) {
+            const key = `${x},${y}`;
+            if (agg.positionalTotalCounts.has(key)) {
+              const total = agg.positionalTotalCounts.get(key)!;
+              const correct = agg.positionalCorrectCounts.get(key) ?? 0;
+              const rate = correct / total;
+
+              if (rate === 1) grid[y][x] = 'P';
+              else if (rate >= 0.9) grid[y][x] = '9';
+              else if (rate >= 0.8) grid[y][x] = '8';
+              else if (rate >= 0.7) grid[y][x] = '7';
+              else if (rate >= 0.6) grid[y][x] = '6';
+              else if (rate >= 0.5) grid[y][x] = '5';
+              else if (rate >= 0.4) grid[y][x] = '4';
+              else if (rate >= 0.3) grid[y][x] = '3';
+              else if (rate >= 0.2) grid[y][x] = '2';
+              else if (rate >= 0.1) grid[y][x] = '1';
+              else grid[y][x] = '0';
+            }
+          }
+        }
+        console.log(grid.map((row) => row.join('')).join('\n'));
+      });
+    });
+  });
+}
+
+async function main() {
+  logger.info('Starting evaluation summary...');
+  const results = await loadResults();
+  if (results.length === 0) {
     return;
   }
 
-  const strategiesMap = new Map<string, PromptStrategy>([
-    ['SimplePromptStrategy', new SimplePromptStrategy()],
-    ['GraphPromptStrategy', new GraphPromptStrategy()],
-  ]);
+  const summary = await calculateSummary(results);
 
-  let strategiesToEvaluate: PromptStrategy[] = [];
-  const strategyName = process.argv[4];
+  console.log('\n--- Overall Accuracy Summary ---');
+  printSummaryTable(summary);
 
-  if (!strategyName || strategyName.toLowerCase() === 'all') {
-    strategiesToEvaluate = Array.from(strategiesMap.values());
-  } else {
-    const selectedStrategy = strategiesMap.get(strategyName);
-    if (selectedStrategy) {
-      strategiesToEvaluate = [selectedStrategy];
-    } else {
-      logger.error(`Unknown strategy: ${strategyName}. Available strategies are: ${Array.from(strategiesMap.keys()).join(', ')}`);
-      return;
-    }
-  }
-
-  for (const mazeFile of mazeFiles) {
-    for (const strategy of strategiesToEvaluate) {
-      await evaluateStrategy(mazeFile, strategy, process.argv[2]);
-    }
-  }
+  console.log('\n--- Positional Accuracy Details ---');
+  printGridPerformance(summary);
 }
 
-main().catch(error => {
-  logger.error('An unexpected error occurred:', error);
+main().catch((error) => {
+  logger.error('An unexpected error occurred during evaluation summary:', error);
   process.exit(1);
 });

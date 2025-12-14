@@ -1,11 +1,11 @@
 // src/runner/MazeRunner.ts
 
+import LLM from '@/llm/LLM';
+import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 import { Position } from '@/maze/types';
-import { PromptStrategy } from './promptBuilder';
-import LLM from '@/llm/LLM';
-import { MoveAction, MoveActionSchema } from './outputParser';
-import { createLogger } from '@/logger/Logger';
+import { MoveAction, MoveActionSchema } from '@/runner/outputParser';
+import { PromptStrategy } from '@/runner/promptBuilder';
 
 const logger = createLogger('runner');
 
@@ -52,9 +52,7 @@ export class MazeRunner {
 
       // 次の位置が有効かチェック
       if (!this.isValidMove(nextPosition)) {
-        logger.warn(
-          `Invalid move suggested by LLM: to (${nextPosition.x}, ${nextPosition.y}). This is a wall or out of bounds.`,
-        );
+        logger.warn(`Invalid move suggested by LLM: to (${nextPosition.x}, ${nextPosition.y}). This is a wall or out of bounds.`);
         // 戦略：単純に終了する
         break;
       }

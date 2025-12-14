@@ -1,6 +1,6 @@
 // src/maze/Maze.ts
 
-import { CellType, Position } from './types';
+import { Position, CellType } from '@/maze/types';
 
 export class Maze {
   private readonly grid: CellType[][];
@@ -72,7 +72,7 @@ export class Maze {
             }
             return cell;
           })
-          .join('')
+          .join(''),
       )
       .join('\n');
   }
