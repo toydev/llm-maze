@@ -11,7 +11,7 @@ import { Maze } from '@/maze/Maze';
 import { createOptimalMoveMap } from '@/maze/solver';
 import { Move, Position } from '@/maze/types';
 import { MoveActionSchema } from '@/runner/outputParser';
-import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy } from '@/runner/promptBuilder';
+import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy } from '@/runner/prompt';
 
 const logger = createLogger('execute');
 

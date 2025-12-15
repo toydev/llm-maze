@@ -9,7 +9,7 @@ import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 import { solveWithAStar } from '@/maze/solver';
 import { MazeRunner } from '@/runner/MazeRunner';
-import { SimplePromptStrategy } from '@/runner/promptBuilder';
+import { SimplePromptStrategy } from '@/runner/prompt';
 
 const logger = createLogger('main');
 

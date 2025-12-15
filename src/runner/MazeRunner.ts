@@ -5,7 +5,7 @@ import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 import { Position } from '@/maze/types';
 import { MoveAction, MoveActionSchema } from '@/runner/outputParser';
-import { PromptStrategy } from '@/runner/promptBuilder';
+import { PromptStrategy } from '@/runner/prompt';
 
 const logger = createLogger('runner');
 
