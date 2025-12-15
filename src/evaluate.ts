@@ -3,6 +3,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import { defineCommand, runMain } from 'citty';
 import yaml from 'yaml';
 
 import { createLogger } from '@/logger/Logger';
@@ -234,23 +235,27 @@ function printGridPerformance(summary: Summary): void {
   });
 }
 
-async function main() {
-  logger.info('Starting evaluation summary...');
-  const results = await loadResults();
-  if (results.length === 0) {
-    return;
-  }
+const main = defineCommand({
+  meta: {
+    name: 'evaluate',
+    description: 'execute の結果を集計・表示する',
+  },
+  args: {},
+  async run() {
+    logger.info('Starting evaluation summary...');
+    const results = await loadResults();
+    if (results.length === 0) {
+      return;
+    }
 
-  const summary = await calculateSummary(results);
+    const summary = await calculateSummary(results);
 
-  console.log('\n--- Overall Accuracy Summary ---');
-  printSummaryTable(summary);
+    console.log('\n--- Overall Accuracy Summary ---');
+    printSummaryTable(summary);
 
-  console.log('\n--- Positional Accuracy Details ---');
-  printGridPerformance(summary);
-}
-
-main().catch((error) => {
-  logger.error('An unexpected error occurred during evaluation summary:', error);
-  process.exit(1);
+    console.log('\n--- Positional Accuracy Details ---');
+    printGridPerformance(summary);
+  },
 });
+
+runMain(main);

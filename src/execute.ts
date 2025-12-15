@@ -3,6 +3,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import { defineCommand, runMain } from 'citty';
 import yaml from 'yaml';
 
 import LLM from '@/llm/LLM';
@@ -122,75 +123,89 @@ async function saveResult(result: EvaluationResult): Promise<void> {
   logger.info(`Evaluation result saved to: ${filePath}`);
 }
 
-/**
- * メイン実行関数
- */
-async function main() {
-  const args = process.argv.slice(2);
-  const modelName = args[0];
-  const mazePathArg = args[1] ?? 'all';
-  const strategyArg = args[2] ?? 'all';
-  const timesArg = args.find((arg) => arg.startsWith('--times='));
-  const times = timesArg ? parseInt(timesArg.split('=')[1], 10) : 1;
+const strategiesMap = new Map<string, PromptStrategy>([
+  ['SimplePromptStrategy', new SimplePromptStrategy()],
+  ['GraphPromptStrategy', new GraphPromptStrategy()],
+]);
 
-  if (!modelName) {
-    logger.error('Usage: <modelName> [mazePath|all] [strategyName|all] [--times=N]');
-    process.exit(1);
-  }
+const main = defineCommand({
+  meta: {
+    name: 'execute',
+    description: 'LLMの迷路解決能力を評価する',
+  },
+  args: {
+    model: {
+      type: 'positional',
+      required: true,
+      description: 'LLMモデル名 (例: gemini:gemini-2.5-flash, ollama:gemma3:latest)',
+    },
+    maze: {
+      type: 'positional',
+      default: 'all',
+      description: '迷路ファイルパス、または "all" で全迷路 (デフォルト: all)',
+    },
+    strategy: {
+      type: 'positional',
+      default: 'all',
+      description: `戦略名、または "all" で全戦略 (デフォルト: all)\n利用可能: ${Array.from(strategiesMap.keys()).join(', ')}`,
+    },
+    times: {
+      type: 'string',
+      default: '1',
+      description: '各組み合わせの実行回数 (デフォルト: 1)',
+    },
+  },
+  async run({ args }) {
+    const { model, maze: mazePathArg, strategy: strategyArg, times: timesStr } = args;
+    const times = parseInt(timesStr, 10);
 
-  // 迷路ファイルの決定
-  let mazeFiles: string[] = [];
-  if (mazePathArg.toLowerCase() === 'all') {
-    const mazeDir = './mazes';
-    mazeFiles = (await fs.readdir(mazeDir)).filter((file) => file.endsWith('.txt')).map((file) => path.join(mazeDir, file));
-  } else {
-    mazeFiles = [mazePathArg];
-  }
-  if (mazeFiles.length === 0) {
-    logger.warn('No maze files found to execute.');
-    return;
-  }
-
-  // 戦略の決定
-  const strategiesMap = new Map<string, PromptStrategy>([
-    ['SimplePromptStrategy', new SimplePromptStrategy()],
-    ['GraphPromptStrategy', new GraphPromptStrategy()],
-  ]);
-  let strategiesToExecute: PromptStrategy[] = [];
-  if (strategyArg.toLowerCase() === 'all') {
-    strategiesToExecute = Array.from(strategiesMap.values());
-  } else {
-    const selectedStrategy = strategiesMap.get(strategyArg);
-    if (selectedStrategy) {
-      strategiesToExecute = [selectedStrategy];
+    // 迷路ファイルの決定
+    let mazeFiles: string[] = [];
+    if (mazePathArg.toLowerCase() === 'all') {
+      const mazeDir = './mazes';
+      mazeFiles = (await fs.readdir(mazeDir)).filter((file) => file.endsWith('.txt')).map((file) => path.join(mazeDir, file));
     } else {
-      logger.error(`Unknown strategy: ${strategyArg}. Available: ${Array.from(strategiesMap.keys()).join(', ')}`);
+      mazeFiles = [mazePathArg];
+    }
+    if (mazeFiles.length === 0) {
+      logger.warn('No maze files found to execute.');
       return;
     }
-  }
 
-  logger.info(`Model: ${modelName}`);
-  logger.info(`Mazes: ${mazeFiles.join(', ')}`);
-  logger.info(`Strategies: ${strategiesToExecute.map((s) => s.constructor.name).join(', ')}`);
-  logger.info(`Times to run for each combination: ${times}`);
+    // 戦略の決定
+    let strategiesToExecute: PromptStrategy[] = [];
+    if (strategyArg.toLowerCase() === 'all') {
+      strategiesToExecute = Array.from(strategiesMap.values());
+    } else {
+      const selectedStrategy = strategiesMap.get(strategyArg);
+      if (selectedStrategy) {
+        strategiesToExecute = [selectedStrategy];
+      } else {
+        logger.error(`Unknown strategy: ${strategyArg}. Available: ${Array.from(strategiesMap.keys()).join(', ')}`);
+        return;
+      }
+    }
 
-  // 実行ループ
-  for (const mazeFile of mazeFiles) {
-    for (const strategy of strategiesToExecute) {
-      for (let i = 0; i < times; i++) {
-        logger.info(`--- Execution ${i + 1}/${times} ---`);
-        try {
-          const result = await executeStrategy(mazeFile, strategy, modelName);
-          await saveResult(result);
-        } catch (error) {
-          logger.error(`Failed to execute strategy for maze ${mazeFile} and strategy ${strategy.constructor.name}`, error);
+    logger.info(`Model: ${model}`);
+    logger.info(`Mazes: ${mazeFiles.join(', ')}`);
+    logger.info(`Strategies: ${strategiesToExecute.map((s) => s.constructor.name).join(', ')}`);
+    logger.info(`Times to run for each combination: ${times}`);
+
+    // 実行ループ
+    for (const mazeFile of mazeFiles) {
+      for (const strategy of strategiesToExecute) {
+        for (let i = 0; i < times; i++) {
+          logger.info(`--- Execution ${i + 1}/${times} ---`);
+          try {
+            const result = await executeStrategy(mazeFile, strategy, model);
+            await saveResult(result);
+          } catch (error) {
+            logger.error(`Failed to execute strategy for maze ${mazeFile} and strategy ${strategy.constructor.name}`, error);
+          }
         }
       }
     }
-  }
-}
-
-main().catch((error) => {
-  logger.error('An unexpected error occurred:', error);
-  process.exit(1);
+  },
 });
+
+runMain(main);
