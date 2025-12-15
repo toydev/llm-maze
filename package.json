@@ -8,7 +8,6 @@
   "scripts": {
     "lint": "eslint --fix .",
     "typecheck": "tsc --noEmit",
-    "start": "vite-node src/main.ts",
     "test": "vitest",
     "test:diff": "diff -r test/snapshot/actual test/snapshot/expected || echo 'スナップショットに差分があります。内容確認後に test:update を実行してください。'",
     "test:update": "VITEST_UPDATE_SNAPSHOTS=true vitest",
