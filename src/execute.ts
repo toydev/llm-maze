@@ -76,6 +76,8 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
     const remaining = '.'.repeat(totalCount - progressChars.length);
     const elapsed = Date.now() - startTime;
     const completed = progressChars.length;
+    const correctCount = progressChars.filter((c) => c === 'O').length;
+    const incorrectCount = progressChars.filter((c) => c === 'X').length;
 
     let etaStr = '--:--';
     if (completed > 0) {
@@ -84,7 +86,7 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
       etaStr = formatTime(remainingTime);
     }
 
-    process.stdout.write(`\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} | ${formatTime(elapsed)} | 残: ${etaStr}`);
+    process.stdout.write(`\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} O:${correctCount} X:${incorrectCount} | ${formatTime(elapsed)} 残: ${etaStr}`);
   };
 
   // 1秒ごとに更新
