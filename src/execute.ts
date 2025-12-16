@@ -238,16 +238,20 @@ const main = defineCommand({
     logger.info(`Strategies: ${strategiesToExecute.map((s) => s.constructor.name).join(', ')}`);
     logger.info(`Times to run for each combination: ${times}`);
 
-    // 実行ループ
-    for (const mazeFile of mazeFiles) {
-      for (const strategy of strategiesToExecute) {
-        for (let i = 0; i < times; i++) {
-          logger.info(`--- Execution ${i + 1}/${times} ---`);
+    // 実行ループ（times を外側にしてまんべんなく実行）
+    for (let i = 0; i < times; i++) {
+      for (const mazeFile of mazeFiles) {
+        for (const strategy of strategiesToExecute) {
+          const mazeName = path.basename(mazeFile, '.txt');
+          const strategyName = strategy.constructor.name;
+          const runInfo = `[${i + 1}/${times}] ${mazeName} / ${strategyName}`;
+          process.stdout.write(`\n${runInfo}\n`);
+
           try {
             const result = await executeStrategy(mazeFile, strategy, model);
             await saveResult(result);
           } catch (error) {
-            logger.error(`Failed to execute strategy for maze ${mazeFile} and strategy ${strategy.constructor.name}`, error);
+            logger.error(`Failed: ${runInfo}`, error);
           }
         }
       }
