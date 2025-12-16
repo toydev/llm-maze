@@ -12,7 +12,8 @@
     "test:diff": "diff -r test/snapshot/actual test/snapshot/expected || echo 'スナップショットに差分があります。内容確認後に test:update を実行してください。'",
     "test:update": "VITEST_UPDATE_SNAPSHOTS=true vitest",
     "execute": "vite-node src/execute.ts",
-    "evaluate": "vite-node src/evaluate.ts"
+    "evaluate": "vite-node src/evaluate.ts",
+    "llm-test": "vite-node src/test.ts"
   },
   "dependencies": {
     "@langchain/google-genai": "^2.1.0",
