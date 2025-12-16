@@ -31,6 +31,8 @@ type EvaluationResult = {
   totalPositions: number;
   correctMoves: number;
   accuracy: number;
+  totalTimeMs: number;
+  averageTimePerPositionMs: number;
   results: PositionResult[];
 };
 
@@ -56,6 +58,38 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
 
   const evaluationPositions = Array.from(optimalMoveMap.keys());
   const positionResults: PositionResult[] = [];
+  const totalCount = evaluationPositions.length;
+
+  // 時間フォーマット用ヘルパー (mm:ss)
+  const formatTime = (ms: number): string => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // 進捗表示の初期化
+  const progressChars: string[] = [];
+  const startTime = Date.now();
+
+  const updateProgress = () => {
+    const remaining = '.'.repeat(totalCount - progressChars.length);
+    const elapsed = Date.now() - startTime;
+    const completed = progressChars.length;
+
+    let etaStr = '--:--';
+    if (completed > 0) {
+      const avgTime = elapsed / completed;
+      const remainingTime = avgTime * (totalCount - completed);
+      etaStr = formatTime(remainingTime);
+    }
+
+    process.stdout.write(`\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} | ${formatTime(elapsed)} | 残: ${etaStr}`);
+  };
+
+  // 1秒ごとに更新
+  const progressInterval = setInterval(updateProgress, 1000);
+  updateProgress();
 
   for (const posKey of evaluationPositions) {
     const [x, y] = posKey.split(',').map(Number);
@@ -76,24 +110,34 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
         llmMove,
         optimalMoves: Array.from(correctMoveSet),
       });
-      if (!isCorrect) {
-        logger.warn(`[${posKey}] Incorrect: LLM chose '${llmMove}', but optimal was [${Array.from(correctMoveSet).join(', ')}]`);
-      }
+
+      progressChars.push(isCorrect ? 'O' : 'X');
+      updateProgress();
     } catch (error) {
       logger.error(`[${posKey}] Error during LLM invocation:`, error);
       // エラーが発生した場合は不正解として記録
       positionResults.push({
         position: currentPos,
         isCorrect: false,
-        llmMove: 'error', // or some other indicator
+        llmMove: 'error',
         optimalMoves: Array.from(correctMoveSet),
       });
+
+      progressChars.push('X');
+      updateProgress();
     }
   }
+
+  // 進捗表示の終了
+  clearInterval(progressInterval);
+  updateProgress(); // 最終状態を表示
+  process.stdout.write('\n');
 
   const correctMoves = positionResults.filter((r) => r.isCorrect).length;
   const totalPositions = evaluationPositions.length;
   const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
+  const totalTimeMs = Date.now() - startTime;
+  const averageTimePerPositionMs = totalPositions > 0 ? totalTimeMs / totalPositions : 0;
 
   return {
     mazeFile,
@@ -102,6 +146,8 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
     totalPositions,
     correctMoves,
     accuracy,
+    totalTimeMs,
+    averageTimePerPositionMs,
     results: positionResults,
   };
 }
@@ -113,7 +159,8 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
 async function saveResult(result: EvaluationResult): Promise<void> {
   const timestamp = new Date().toISOString().replace(/:/g, '-');
   const modelId = result.modelName.replace(/[:/]/g, '_'); // ollama:gemma3:latest -> ollama_gemma3_latest
-  const outputDir = path.join('output', modelId, result.strategyName);
+  const mazeName = path.basename(result.mazeFile, '.txt');
+  const outputDir = path.join('output', modelId, result.strategyName, mazeName);
   await fs.mkdir(outputDir, { recursive: true });
 
   const filePath = path.join(outputDir, `${timestamp}.yaml`);
