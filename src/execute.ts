@@ -39,12 +39,13 @@ type EvaluationResult = {
 /**
  * LLMの判断と模範解答を比較し、評価結果を返す関数
  * @param mazeFile 評価対象の迷路ファイルパス
+ * @param strategyName 戦略名
  * @param strategy 使用するプロンプト戦略
  * @param modelName 使用するLLMのモデル名
  * @returns 評価結果オブジェクト
  */
-async function executeStrategy(mazeFile: string, strategy: PromptStrategy, modelName: string): Promise<EvaluationResult> {
-  logger.info(`Executing for maze: ${mazeFile}, strategy: ${strategy.constructor.name}, model: ${modelName}`);
+async function executeStrategy(mazeFile: string, strategyName: string, strategy: PromptStrategy, modelName: string): Promise<EvaluationResult> {
+  logger.info(`Executing for maze: ${mazeFile}, strategy: ${strategyName}, model: ${modelName}`);
 
   const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
   const maze = new Maze(mazeLayout);
@@ -146,7 +147,7 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
   return {
     mazeFile: mazeFile.replace(/\\/g, '/'),
     modelName,
-    strategyName: strategy.constructor.name,
+    strategyName,
     totalPositions,
     correctMoves,
     accuracy,
@@ -175,8 +176,8 @@ async function saveResult(result: EvaluationResult): Promise<void> {
 }
 
 const strategiesMap = new Map<string, PromptStrategy>([
-  ['SimplePromptStrategy', new SimplePromptStrategy()],
-  ['GraphPromptStrategy', new GraphPromptStrategy()],
+  ['simple', new SimplePromptStrategy()],
+  ['graph', new GraphPromptStrategy()],
 ]);
 
 const main = defineCommand({
@@ -224,13 +225,13 @@ const main = defineCommand({
     }
 
     // 戦略の決定
-    let strategiesToExecute: PromptStrategy[] = [];
+    let strategiesToExecute: [string, PromptStrategy][] = [];
     if (strategyArg.toLowerCase() === 'all') {
-      strategiesToExecute = Array.from(strategiesMap.values());
+      strategiesToExecute = Array.from(strategiesMap.entries());
     } else {
       const selectedStrategy = strategiesMap.get(strategyArg);
       if (selectedStrategy) {
-        strategiesToExecute = [selectedStrategy];
+        strategiesToExecute = [[strategyArg, selectedStrategy]];
       } else {
         logger.error(`Unknown strategy: ${strategyArg}. Available: ${Array.from(strategiesMap.keys()).join(', ')}`);
         return;
@@ -239,20 +240,19 @@ const main = defineCommand({
 
     logger.info(`Model: ${model}`);
     logger.info(`Mazes: ${mazeFiles.join(', ')}`);
-    logger.info(`Strategies: ${strategiesToExecute.map((s) => s.constructor.name).join(', ')}`);
+    logger.info(`Strategies: ${strategiesToExecute.map(([name]) => name).join(', ')}`);
     logger.info(`Times to run for each combination: ${times}`);
 
     // 実行ループ（times を外側にしてまんべんなく実行）
     for (let i = 0; i < times; i++) {
       for (const mazeFile of mazeFiles) {
-        for (const strategy of strategiesToExecute) {
+        for (const [strategyName, strategy] of strategiesToExecute) {
           const mazeName = path.basename(mazeFile, '.txt');
-          const strategyName = strategy.constructor.name;
           const runInfo = `[${i + 1}/${times}] ${mazeName} / ${strategyName}`;
           process.stdout.write(`\n${runInfo}\n`);
 
           try {
-            const result = await executeStrategy(mazeFile, strategy, model);
+            const result = await executeStrategy(mazeFile, strategyName, strategy, model);
             await saveResult(result);
           } catch (error) {
             logger.error(`Failed: ${runInfo}`, error);
