@@ -86,7 +86,9 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
       etaStr = formatTime(remainingTime);
     }
 
-    process.stdout.write(`\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} O:${correctCount} X:${incorrectCount} | ${formatTime(elapsed)} 残: ${etaStr}`);
+    process.stdout.write(
+      `\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} O:${correctCount} X:${incorrectCount} | ${formatTime(elapsed)} 残: ${etaStr}`,
+    );
   };
 
   // 1秒ごとに更新

@@ -52,9 +52,10 @@ function calculateDistancesFromEnd(maze: Maze): DistanceMap {
 }
 
 /**
- * 迷路の各マスからゴールに向かうための最適な次の一手（模範解答）のマップを生成します。
+ * 迷路の各マスからゴールに向かうための許容される次の一手のマップを生成します。
+ * 「許容される」= 移動先の距離 ≦ 移動元の距離（遠ざからない移動）
  * @param maze 迷路オブジェクト
- * @returns 各マスの模範解答をマッピングしたOptimalMoveMap
+ * @returns 各マスの許容される移動をマッピングしたOptimalMoveMap
  */
 export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
   const distances = calculateDistancesFromEnd(maze);
@@ -65,23 +66,23 @@ export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
     const moves: Move[] = [];
 
     // Up
-    const upPos = { x, y: y - 1 };
-    if (distances.get(`${upPos.x},${upPos.y}`) === distance - 1) {
+    const upDist = distances.get(`${x},${y - 1}`);
+    if (upDist !== undefined && upDist <= distance) {
       moves.push('up');
     }
     // Down
-    const downPos = { x, y: y + 1 };
-    if (distances.get(`${downPos.x},${downPos.y}`) === distance - 1) {
+    const downDist = distances.get(`${x},${y + 1}`);
+    if (downDist !== undefined && downDist <= distance) {
       moves.push('down');
     }
     // Left
-    const leftPos = { x: x - 1, y };
-    if (distances.get(`${leftPos.x},${leftPos.y}`) === distance - 1) {
+    const leftDist = distances.get(`${x - 1},${y}`);
+    if (leftDist !== undefined && leftDist <= distance) {
       moves.push('left');
     }
     // Right
-    const rightPos = { x: x + 1, y };
-    if (distances.get(`${rightPos.x},${rightPos.y}`) === distance - 1) {
+    const rightDist = distances.get(`${x + 1},${y}`);
+    if (rightDist !== undefined && rightDist <= distance) {
       moves.push('right');
     }
 
