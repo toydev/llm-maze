@@ -142,7 +142,7 @@ async function executeStrategy(mazeFile: string, strategy: PromptStrategy, model
   const averageTimePerPositionMs = totalPositions > 0 ? totalTimeMs / totalPositions : 0;
 
   return {
-    mazeFile,
+    mazeFile: mazeFile.replace(/\\/g, '/'),
     modelName,
     strategyName: strategy.constructor.name,
     totalPositions,

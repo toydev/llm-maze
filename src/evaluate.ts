@@ -26,6 +26,8 @@ type EvaluationResult = {
   totalPositions: number;
   correctMoves: number;
   accuracy: number;
+  totalTimeMs: number;
+  averageTimePerPositionMs: number;
   results: PositionResult[];
 };
 
@@ -35,6 +37,8 @@ type AggregatedResult = {
   totalCorrectMoves: number;
   totalPositions: number;
   averageAccuracy: number;
+  totalTimeMs: number;
+  averageTimePerPositionMs: number;
   positionalCorrectCounts: Map<string, number>; // key: "x,y"
   positionalTotalCounts: Map<string, number>; // key: "x,y"
   mazeLayout: string[];
@@ -112,23 +116,27 @@ async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
     }
     const strategySummary = modelSummary.get(res.strategyName)!;
 
-    if (!strategySummary.has(res.mazeFile)) {
-      const mazeLayout = (await fs.readFile(res.mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
-      strategySummary.set(res.mazeFile, {
+    const mazeFilePath = res.mazeFile.replace(/\\/g, '/');
+    if (!strategySummary.has(mazeFilePath)) {
+      const mazeLayout = (await fs.readFile(mazeFilePath, 'utf-8')).split('\n').filter((line) => line.length > 0);
+      strategySummary.set(mazeFilePath, {
         totalRuns: 0,
         totalCorrectMoves: 0,
         totalPositions: 0,
         averageAccuracy: 0,
+        totalTimeMs: 0,
+        averageTimePerPositionMs: 0,
         positionalCorrectCounts: new Map(),
         positionalTotalCounts: new Map(),
         mazeLayout,
       });
     }
-    const agg = strategySummary.get(res.mazeFile)!;
+    const agg = strategySummary.get(mazeFilePath)!;
 
     agg.totalRuns++;
     agg.totalCorrectMoves += res.correctMoves;
     agg.totalPositions += res.totalPositions;
+    agg.totalTimeMs += res.totalTimeMs ?? 0;
 
     for (const posRes of res.results) {
       const key = `${posRes.position.x},${posRes.position.y}`;
@@ -139,11 +147,12 @@ async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
     }
   }
 
-  // 平均正解率を計算
+  // 平均正解率と平均時間を計算
   for (const modelMap of summary.values()) {
     for (const strategyMap of modelMap.values()) {
       for (const agg of strategyMap.values()) {
         agg.averageAccuracy = agg.totalPositions > 0 ? (agg.totalCorrectMoves / agg.totalPositions) * 100 : 0;
+        agg.averageTimePerPositionMs = agg.totalPositions > 0 ? agg.totalTimeMs / agg.totalPositions : 0;
       }
     }
   }
@@ -155,6 +164,15 @@ async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
  * 集計サマリーをテーブル形式で表示する
  * @param summary 集計サマリー
  */
+function formatTime(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const sec = ms / 1000;
+  if (sec < 60) return `${sec.toFixed(1)}s`;
+  const min = Math.floor(sec / 60);
+  const remainSec = Math.round(sec % 60);
+  return `${min}m${remainSec}s`;
+}
+
 function printSummaryTable(summary: Summary): void {
   const models = Array.from(summary.keys()).sort();
   const allStrategies = new Set<string>();
@@ -175,12 +193,15 @@ function printSummaryTable(summary: Summary): void {
       if (strategyMap) {
         let totalCorrect = 0;
         let totalPositions = 0;
+        let totalTimeMs = 0;
         strategyMap.forEach((agg) => {
           totalCorrect += agg.totalCorrectMoves;
           totalPositions += agg.totalPositions;
+          totalTimeMs += agg.totalTimeMs;
         });
         const overallAccuracy = totalPositions > 0 ? (totalCorrect / totalPositions) * 100 : 0;
-        row += `${overallAccuracy.toFixed(2)}%`.padEnd(25);
+        const avgTimePerPos = totalPositions > 0 ? totalTimeMs / totalPositions : 0;
+        row += `${overallAccuracy.toFixed(1)}% (${formatTime(avgTimePerPos)}/pos)`.padEnd(25);
       } else {
         row += 'N/A'.padEnd(25);
       }
@@ -196,14 +217,17 @@ function printSummaryTable(summary: Summary): void {
 function printGridPerformance(summary: Summary): void {
   const models = Array.from(summary.keys()).sort();
   models.forEach((model) => {
+    console.log(`\n=== ${model} ===`);
     const modelMap = summary.get(model)!;
     const strategies = Array.from(modelMap.keys()).sort();
     strategies.forEach((stg) => {
+      console.log(`\n  --- ${stg} ---`);
       const strategyMap = modelMap.get(stg)!;
       const mazeFiles = Array.from(strategyMap.keys()).sort();
       mazeFiles.forEach((mazeFile) => {
         const agg = strategyMap.get(mazeFile)!;
-        console.log(`\n--- Grid Performance: ${model} / ${stg} (${mazeFile}) ---`);
+        const mazeName = path.basename(mazeFile, '.txt');
+        console.log(`\n    ${mazeName}:`);
 
         const grid = agg.mazeLayout.map((row) => row.split(''));
 
@@ -229,7 +253,7 @@ function printGridPerformance(summary: Summary): void {
             }
           }
         }
-        console.log(grid.map((row) => row.join('')).join('\n'));
+        console.log(grid.map((row) => '    ' + row.join('')).join('\n'));
       });
     });
   });
