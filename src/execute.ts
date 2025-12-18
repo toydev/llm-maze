@@ -259,7 +259,7 @@ const main = defineCommand({
       for (const mazeFile of mazeFiles) {
         for (const [strategyName, strategy] of strategiesToExecute) {
           const mazeName = path.basename(mazeFile, '.txt');
-          const runInfo = `[${i + 1}/${times}] ${mazeName} / ${strategyName}`;
+          const runInfo = `[${i + 1}/${times}] ${model} / ${mazeName} / ${strategyName}`;
           process.stdout.write(`\n${runInfo}\n`);
 
           try {
