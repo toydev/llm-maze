@@ -1,4 +1,4 @@
-// src/evaluate.ts
+// src/summary.ts
 
 import fs from 'fs/promises';
 import path from 'path';
@@ -9,7 +9,7 @@ import yaml from 'yaml';
 import { createLogger } from '@/logger/Logger';
 import { Move, Position } from '@/maze/types';
 
-const logger = createLogger('evaluate');
+const logger = createLogger('summary');
 
 // execute.ts と共通の型定義
 type PositionResult = {
@@ -17,6 +17,7 @@ type PositionResult = {
   isCorrect: boolean;
   llmMove: Move;
   optimalMoves: Move[];
+  timeMs?: number;
 };
 
 type EvaluationResult = {
@@ -261,7 +262,7 @@ function printGridPerformance(summary: Summary): void {
 
 const main = defineCommand({
   meta: {
-    name: 'evaluate',
+    name: 'summary',
     description: 'execute の結果を集計・表示する',
   },
   args: {},

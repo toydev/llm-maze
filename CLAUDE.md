@@ -20,3 +20,11 @@ LLMにどう世界を提示すれば空間構造を理解できるか → `Promp
 - `PromptStrategy`を切り替えながらLLMの挙動を比較・分析
 - 評価は模範解答（BFS算出）との正解率で定量化
 - 正解率50%超が最低ライン（期待前進距離 `2p-1` が正になる条件）
+
+## 5. コマンド
+
+| コマンド | 説明 |
+|----------|------|
+| `npm run execute <model> [maze] [strategy]` | LLM実行・結果保存 |
+| `npm run summary` | 全体統計を表示 |
+| `npm run detail [file]` | マス毎の詳細分析（処理時間など）|

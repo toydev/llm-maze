@@ -29,6 +29,7 @@ type PositionResult = {
   isCorrect: boolean;
   llmMove: Move | 'error';
   optimalMoves: Move[];
+  timeMs: number;
 };
 
 type EvaluationResult = {
@@ -112,21 +113,25 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
     const history = pathMap.get(posKey) ?? [currentPos];
     const prompt = strategy.build(maze, history);
 
+    const posStartTime = Date.now();
     try {
       const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
       const llmMove = llmResponse.move;
       const isCorrect = correctMoveSet.has(llmMove);
+      const posTimeMs = Date.now() - posStartTime;
 
       positionResults.push({
         position: currentPos,
         isCorrect,
         llmMove,
         optimalMoves: Array.from(correctMoveSet),
+        timeMs: posTimeMs,
       });
 
       progressChars.push(isCorrect ? 'O' : 'X');
       updateProgress();
     } catch (error) {
+      const posTimeMs = Date.now() - posStartTime;
       logger.error(`[${posKey}] Error during LLM invocation:`, error);
       // エラーが発生した場合は不正解として記録
       positionResults.push({
@@ -134,6 +139,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
         isCorrect: false,
         llmMove: 'error',
         optimalMoves: Array.from(correctMoveSet),
+        timeMs: posTimeMs,
       });
 
       progressChars.push('X');
