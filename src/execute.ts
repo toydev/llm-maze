@@ -12,7 +12,14 @@ import { Maze } from '@/maze/Maze';
 import { createOptimalMoveMap, createPathMapFromStart } from '@/maze/solver';
 import { Move, Position } from '@/maze/types';
 import { MoveActionSchema } from '@/runner/outputParser';
-import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy } from '@/runner/prompt';
+import {
+  PromptStrategy,
+  SimplePromptStrategy,
+  GraphPromptStrategy,
+  MatrixEmbedPromptStrategy,
+  MatrixSepPromptStrategy,
+  ListPromptStrategy,
+} from '@/runner/prompt';
 
 const logger = createLogger('execute');
 
@@ -181,6 +188,7 @@ const strategiesMap = new Map<string, PromptStrategy>([
   ['graph', new GraphPromptStrategy()],
   ['matrix-embed', new MatrixEmbedPromptStrategy()],
   ['matrix-sep', new MatrixSepPromptStrategy()],
+  ['list', new ListPromptStrategy()],
 ]);
 
 const main = defineCommand({
