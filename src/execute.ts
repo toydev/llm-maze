@@ -223,10 +223,30 @@ const main = defineCommand({
       default: '1',
       description: '各組み合わせの実行回数 (デフォルト: 1)',
     },
+    'no-warmup': {
+      type: 'boolean',
+      default: false,
+      description: 'ウォームアップをスキップする（外部APIサービス向け）',
+    },
   },
   async run({ args }) {
-    const { model, maze: mazePathArg, strategy: strategyArg, times: timesStr } = args;
+    const { model, maze: mazePathArg, strategy: strategyArg, times: timesStr, 'no-warmup': noWarmup } = args;
     const times = parseInt(timesStr, 10);
+
+    // ウォームアップ（モデルロードのオーバーヘッドを事前に処理）
+    if (!noWarmup) {
+      process.stdout.write('Warming up LLM...');
+      const llm = LLM.get(model);
+      if (llm) {
+        try {
+          await llm.invoke('Hello');
+          process.stdout.write(' done.\n');
+        } catch (error) {
+          process.stdout.write(' failed (continuing anyway).\n');
+          logger.warn('Warmup failed:', error);
+        }
+      }
+    }
 
     // 迷路ファイルの決定
     let mazeFiles: string[] = [];
