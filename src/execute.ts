@@ -9,7 +9,7 @@ import yaml from 'yaml';
 import LLM from '@/llm/LLM';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
-import { createOptimalMoveMap } from '@/maze/solver';
+import { createOptimalMoveMap, createPathMapFromStart } from '@/maze/solver';
 import { Move, Position } from '@/maze/types';
 import { MoveActionSchema } from '@/runner/outputParser';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy } from '@/runner/prompt';
@@ -50,6 +50,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
   const maze = new Maze(mazeLayout);
   const optimalMoveMap = createOptimalMoveMap(maze);
+  const pathMap = createPathMapFromStart(maze);
 
   const llm = LLM.get(modelName);
   if (!llm) {
@@ -101,7 +102,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
     const currentPos: Position = { x, y };
     const correctMoveSet = new Set(optimalMoveMap.get(posKey)!);
 
-    const history: Position[] = [currentPos];
+    const history = pathMap.get(posKey) ?? [currentPos];
     const prompt = strategy.build(maze, history);
 
     try {

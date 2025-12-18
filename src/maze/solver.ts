@@ -10,6 +10,12 @@ import { Position, Move } from '@/maze/types';
 type DistanceMap = Map<string, number>;
 
 /**
+ * スタートから各位置への最短経路を格納するマップの型
+ * key: "x,y", value: スタートからその位置への経路（Position配列）
+ */
+export type PathMap = Map<string, Position[]>;
+
+/**
  * 各マスからの最適な次の一手を格納するマップの型
  * key: "x,y", value: ['up', 'down', 'left', 'right'] の配列
  */
@@ -92,6 +98,56 @@ export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
   }
 
   return optimalMoves;
+}
+
+/**
+ * BFSを用いて、スタートから全ての到達可能なマスへの最短経路を計算します。
+ * @param maze 迷路オブジェクト
+ * @returns 各位置への最短経路をマッピングしたPathMap
+ */
+export function createPathMapFromStart(maze: Maze): PathMap {
+  const pathMap: PathMap = new Map();
+  const parentMap = new Map<string, Position | null>();
+  const queue: Position[] = [maze.startPosition];
+  const startKey = `${maze.startPosition.x},${maze.startPosition.y}`;
+
+  parentMap.set(startKey, null);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+
+    const neighbors: Position[] = [
+      { x: current.x, y: current.y - 1 }, // up
+      { x: current.x, y: current.y + 1 }, // down
+      { x: current.x - 1, y: current.y }, // left
+      { x: current.x + 1, y: current.y }, // right
+    ];
+
+    for (const neighbor of neighbors) {
+      const neighborKey = `${neighbor.x},${neighbor.y}`;
+      if (maze.isTraversable(neighbor) && !parentMap.has(neighborKey)) {
+        parentMap.set(neighborKey, current);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  // 各位置への経路を再構築
+  for (const [posKey] of parentMap) {
+    const path: Position[] = [];
+    const [x, y] = posKey.split(',').map(Number);
+    let current: Position | null = { x, y };
+
+    while (current !== null) {
+      path.unshift(current);
+      const key: string = `${current.x},${current.y}`;
+      current = parentMap.get(key) ?? null;
+    }
+
+    pathMap.set(posKey, path);
+  }
+
+  return pathMap;
 }
 
 // A*探索用のノード
