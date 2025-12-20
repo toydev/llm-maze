@@ -83,10 +83,10 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   const startTime = Date.now();
 
   const updateProgress = () => {
-    const remaining = '.'.repeat(totalCount - progressChars.length);
+    const remaining = ' '.repeat(totalCount - progressChars.length);
     const elapsed = Date.now() - startTime;
     const completed = progressChars.length;
-    const correctCount = progressChars.filter((c) => c === 'O').length;
+    const correctCount = progressChars.filter((c) => c === '.').length;
     const incorrectCount = progressChars.filter((c) => c === 'X').length;
 
     let etaStr = '--:--';
@@ -97,7 +97,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
     }
 
     process.stdout.write(
-      `\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} O:${correctCount} X:${incorrectCount} | ${formatTime(elapsed)} 残: ${etaStr}`,
+      `\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} .:${correctCount} X:${incorrectCount} | ${formatTime(elapsed)} 残: ${etaStr}`,
     );
   };
 
@@ -128,7 +128,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
         timeMs: posTimeMs,
       });
 
-      progressChars.push(isCorrect ? 'O' : 'X');
+      progressChars.push(isCorrect ? '.' : 'X');
       updateProgress();
     } catch (error) {
       const posTimeMs = Date.now() - posStartTime;
