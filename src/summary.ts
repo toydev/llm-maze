@@ -215,6 +215,20 @@ function printSummaryTable(summary: Summary): void {
  * マスごとの正解率をグリッドで表示する
  * @param summary 集計サマリー
  */
+// ANSIカラーコード
+const colors = {
+  cyan: '\x1b[36m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+  gray: '\x1b[90m',
+  reset: '\x1b[0m',
+};
+
+function colorize(text: string, color: string): string {
+  return `${color}${text}${colors.reset}`;
+}
+
 function printGridPerformance(summary: Summary): void {
   const models = Array.from(summary.keys()).sort();
   models.forEach((model) => {
@@ -230,27 +244,29 @@ function printGridPerformance(summary: Summary): void {
         const mazeName = path.basename(mazeFile, '.txt');
         console.log(`\n    ${mazeName}:`);
 
-        const grid = agg.mazeLayout.map((row) => row.split(''));
+        const grid: string[][] = agg.mazeLayout.map((row) =>
+          row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)),
+        );
 
         for (let y = 0; y < grid.length; y++) {
-          for (let x = 0; x < grid[y].length; x++) {
+          for (let x = 0; x < agg.mazeLayout[y].length; x++) {
             const key = `${x},${y}`;
             if (agg.positionalTotalCounts.has(key)) {
               const total = agg.positionalTotalCounts.get(key)!;
               const correct = agg.positionalCorrectCounts.get(key) ?? 0;
               const rate = correct / total;
 
-              if (rate === 1) grid[y][x] = 'P';
-              else if (rate >= 0.9) grid[y][x] = '9';
-              else if (rate >= 0.8) grid[y][x] = '8';
-              else if (rate >= 0.7) grid[y][x] = '7';
-              else if (rate >= 0.6) grid[y][x] = '6';
-              else if (rate >= 0.5) grid[y][x] = '5';
-              else if (rate >= 0.4) grid[y][x] = '4';
-              else if (rate >= 0.3) grid[y][x] = '3';
-              else if (rate >= 0.2) grid[y][x] = '2';
-              else if (rate >= 0.1) grid[y][x] = '1';
-              else grid[y][x] = '0';
+              if (rate === 1) {
+                grid[y][x] = colorize('●', colors.cyan);
+              } else if (rate >= 0.9) {
+                grid[y][x] = colorize('9', colors.green);
+              } else if (rate >= 0.7) {
+                grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.yellow);
+              } else if (rate >= 0.5) {
+                grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.yellow);
+              } else {
+                grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.red);
+              }
             }
           }
         }
