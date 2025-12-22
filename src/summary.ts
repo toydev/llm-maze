@@ -265,11 +265,45 @@ const main = defineCommand({
     name: 'summary',
     description: 'execute の結果を集計・表示する',
   },
-  args: {},
-  async run() {
+  args: {
+    model: {
+      type: 'positional',
+      default: 'all',
+      description: 'モデル名で絞り込み（デフォルト: all）',
+    },
+    maze: {
+      type: 'positional',
+      default: 'all',
+      description: '迷路名で絞り込み（デフォルト: all）',
+    },
+    strategy: {
+      type: 'positional',
+      default: 'all',
+      description: '戦略名で絞り込み（デフォルト: all）',
+    },
+  },
+  async run({ args }) {
+    const { model, maze, strategy } = args;
+
     logger.info('Starting evaluation summary...');
-    const results = await loadResults();
+    let results = await loadResults();
     if (results.length === 0) {
+      return;
+    }
+
+    // フィルタリング
+    if (model.toLowerCase() !== 'all') {
+      results = results.filter((r) => r.modelName.includes(model));
+    }
+    if (maze.toLowerCase() !== 'all') {
+      results = results.filter((r) => r.mazeFile.includes(maze));
+    }
+    if (strategy.toLowerCase() !== 'all') {
+      results = results.filter((r) => r.strategyName === strategy);
+    }
+
+    if (results.length === 0) {
+      logger.warn('No results match the filter criteria.');
       return;
     }
 

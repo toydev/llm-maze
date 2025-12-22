@@ -26,5 +26,5 @@ LLMにどう世界を提示すれば空間構造を理解できるか → `Promp
 | コマンド | 説明 |
 |----------|------|
 | `npm run execute <model> [maze] [strategy]` | LLM実行・結果保存 |
-| `npm run summary` | 全体統計を表示 |
+| `npm run summary [model] [maze] [strategy]` | 全体統計を表示 |
 | `npm run detail [file]` | マス毎の詳細分析（処理時間など）|
