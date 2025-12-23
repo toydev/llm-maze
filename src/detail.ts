@@ -57,6 +57,20 @@ async function findYamlFiles(dir: string): Promise<string[]> {
   return files;
 }
 
+// ANSIカラーコード
+const colors = {
+  cyan: '\x1b[36m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+  gray: '\x1b[90m',
+  reset: '\x1b[0m',
+};
+
+function colorize(text: string, color: string): string {
+  return `${color}${text}${colors.reset}`;
+}
+
 /**
  * 時間をフォーマットする
  */
@@ -69,83 +83,46 @@ function formatTime(ms: number): string {
   return `${min}m${remainSec}s`;
 }
 
+
 /**
- * 迷路レイアウトに処理時間を重ねて表示する
+ * 複数の結果を集約する
  */
-async function printTimingGrid(result: EvaluationResult): Promise<void> {
-  const mazeLayout = (await fs.readFile(result.mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
+function aggregateResults(results: EvaluationResult[]): {
+  totalTrials: number;
+  positionStats: Map<string, { times: number[]; correctCount: number; totalCount: number }>;
+  overallStats: { times: number[]; correctCount: number; totalCount: number };
+} {
+  const positionStats = new Map<string, { times: number[]; correctCount: number; totalCount: number }>();
+  const overallStats = { times: [] as number[], correctCount: 0, totalCount: 0 };
 
-  // 各マスの処理時間を取得
-  const timeMap = new Map<string, number>();
-  const correctMap = new Map<string, boolean>();
-  let minTime = Infinity;
-  let maxTime = 0;
-
-  for (const posRes of result.results) {
-    const key = `${posRes.position.x},${posRes.position.y}`;
-    const time = posRes.timeMs ?? 0;
-    timeMap.set(key, time);
-    correctMap.set(key, posRes.isCorrect);
-    if (time > 0) {
-      minTime = Math.min(minTime, time);
-      maxTime = Math.max(maxTime, time);
-    }
-  }
-
-  // 時間をレベル（0-9）に変換
-  const getTimeLevel = (ms: number): string => {
-    if (maxTime === minTime) return '5';
-    const normalized = (ms - minTime) / (maxTime - minTime);
-    return Math.floor(normalized * 9).toString();
-  };
-
-  console.log(`\n--- Timing Grid ---`);
-  console.log(`Min: ${formatTime(minTime)}, Max: ${formatTime(maxTime)}`);
-  console.log(`Legend: 0=fastest ... 9=slowest, X=incorrect\n`);
-
-  const grid = mazeLayout.map((row) => row.split(''));
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < grid[y].length; x++) {
-      const key = `${x},${y}`;
-      if (timeMap.has(key)) {
-        const isCorrect = correctMap.get(key)!;
-        if (!isCorrect) {
-          grid[y][x] = 'X';
-        } else {
-          grid[y][x] = getTimeLevel(timeMap.get(key)!);
-        }
+  for (const result of results) {
+    for (const posRes of result.results) {
+      const key = `${posRes.position.x},${posRes.position.y}`;
+      if (!positionStats.has(key)) {
+        positionStats.set(key, { times: [], correctCount: 0, totalCount: 0 });
       }
+      const stats = positionStats.get(key)!;
+      if (posRes.timeMs) {
+        stats.times.push(posRes.timeMs);
+        overallStats.times.push(posRes.timeMs);
+      }
+      if (posRes.isCorrect) {
+        stats.correctCount++;
+        overallStats.correctCount++;
+      }
+      stats.totalCount++;
+      overallStats.totalCount++;
     }
   }
-  console.log(grid.map((row) => row.join('')).join('\n'));
+
+  return { totalTrials: results.length, positionStats, overallStats };
 }
 
 /**
- * マス毎の詳細を表示する
+ * 集約した統計を表示する
  */
-function printPositionDetails(result: EvaluationResult): void {
-  console.log(`\n--- Position Details ---`);
-  console.log(`${'Position'.padEnd(12)}${'Result'.padEnd(10)}${'LLM Move'.padEnd(12)}${'Optimal'.padEnd(20)}${'Time'.padEnd(10)}`);
-  console.log('-'.repeat(64));
-
-  // 処理時間でソート（降順）
-  const sorted = [...result.results].sort((a, b) => (b.timeMs ?? 0) - (a.timeMs ?? 0));
-
-  for (const posRes of sorted) {
-    const pos = `(${posRes.position.x},${posRes.position.y})`.padEnd(12);
-    const resultStr = (posRes.isCorrect ? 'O' : 'X').padEnd(10);
-    const llmMove = String(posRes.llmMove).padEnd(12);
-    const optimal = posRes.optimalMoves.join(',').padEnd(20);
-    const time = formatTime(posRes.timeMs ?? 0).padEnd(10);
-    console.log(`${pos}${resultStr}${llmMove}${optimal}${time}`);
-  }
-}
-
-/**
- * 統計サマリーを表示する
- */
-function printStatistics(result: EvaluationResult): void {
-  const times = result.results.map((r) => r.timeMs ?? 0).filter((t) => t > 0);
+function printAggregatedStatistics(agg: ReturnType<typeof aggregateResults>): void {
+  const { times, correctCount, totalCount } = agg.overallStats;
   if (times.length === 0) {
     console.log('\nNo timing data available.');
     return;
@@ -158,14 +135,15 @@ function printStatistics(result: EvaluationResult): void {
   const min = times[0];
   const max = times[times.length - 1];
 
-  // 標準偏差
   const variance = times.reduce((acc, t) => acc + Math.pow(t - avg, 2), 0) / times.length;
   const stdDev = Math.sqrt(variance);
 
-  console.log(`\n--- Statistics ---`);
-  console.log(`Total positions: ${result.results.length}`);
-  console.log(`Correct: ${result.correctMoves} (${result.accuracy.toFixed(1)}%)`);
-  console.log(`Total time: ${formatTime(result.totalTimeMs)}`);
+  const accuracy = (correctCount / totalCount) * 100;
+
+  console.log(`\n--- Statistics (${agg.totalTrials} trials) ---`);
+  console.log(`Total positions: ${totalCount} (${totalCount / agg.totalTrials} per trial)`);
+  console.log(`Correct: ${correctCount}/${totalCount} (${accuracy.toFixed(1)}%)`);
+  console.log(`Total time: ${formatTime(sum)}`);
   console.log(`Average: ${formatTime(avg)}`);
   console.log(`Median: ${formatTime(median)}`);
   console.log(`Min: ${formatTime(min)}`);
@@ -173,54 +151,308 @@ function printStatistics(result: EvaluationResult): void {
   console.log(`Std Dev: ${formatTime(stdDev)}`);
 }
 
+/**
+ * 集約したタイミンググリッドを表示する
+ */
+async function printAggregatedTimingGrid(
+  mazeFile: string,
+  agg: ReturnType<typeof aggregateResults>,
+): Promise<void> {
+  const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
+
+  let minAvgTime = Infinity;
+  let maxAvgTime = 0;
+
+  const avgTimeMap = new Map<string, number>();
+
+  for (const [key, stats] of agg.positionStats) {
+    if (stats.times.length > 0) {
+      const avgTime = stats.times.reduce((a, b) => a + b, 0) / stats.times.length;
+      avgTimeMap.set(key, avgTime);
+      minAvgTime = Math.min(minAvgTime, avgTime);
+      maxAvgTime = Math.max(maxAvgTime, avgTime);
+    }
+  }
+
+  // 時間レベル(0-9)に応じた色を返す
+  const getTimeLevelWithColor = (ms: number): string => {
+    if (maxAvgTime === minAvgTime) return colorize('5', colors.yellow);
+    const normalized = (ms - minAvgTime) / (maxAvgTime - minAvgTime);
+    const level = Math.floor(normalized * 9);
+    const char = level.toString();
+    // 0: 水色(最速), 1-2: 緑(速い), 3-5: 黄(普通), 6-9: 赤(遅い)
+    if (level === 0) return colorize(char, colors.cyan);
+    if (level <= 2) return colorize(char, colors.green);
+    if (level <= 5) return colorize(char, colors.yellow);
+    return colorize(char, colors.red);
+  };
+
+  console.log(`\n--- Timing Grid (avg of ${agg.totalTrials} trials) ---`);
+  console.log(`Min avg: ${formatTime(minAvgTime)}, Max avg: ${formatTime(maxAvgTime)}`);
+  console.log(`Legend: ${colorize('0', colors.cyan)}=fastest, ${colorize('1-2', colors.green)}=fast, ${colorize('3-5', colors.yellow)}=mid, ${colorize('6-9', colors.red)}=slow\n`);
+
+  const grid: string[][] = mazeLayout.map((row) =>
+    row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)),
+  );
+
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < mazeLayout[y].length; x++) {
+      const key = `${x},${y}`;
+      if (avgTimeMap.has(key)) {
+        grid[y][x] = getTimeLevelWithColor(avgTimeMap.get(key)!);
+      }
+    }
+  }
+  console.log(grid.map((row) => row.join('')).join('\n'));
+}
+
+/**
+ * 集約した正解率グリッドを表示する
+ */
+async function printAggregatedAccuracyGrid(
+  mazeFile: string,
+  agg: ReturnType<typeof aggregateResults>,
+): Promise<void> {
+  const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
+
+  console.log(`\n--- Accuracy Grid (${agg.totalTrials} trials) ---`);
+  console.log(`Legend: ${colorize('●', colors.cyan)}=100%, ${colorize('9', colors.green)}=90%+, ${colorize('7-8', colors.yellow)}=70%+, ${colorize('5-6', colors.yellow)}=50%+, ${colorize('0-4', colors.red)}=<50%\n`);
+
+  const grid: string[][] = mazeLayout.map((row) =>
+    row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)),
+  );
+
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < mazeLayout[y].length; x++) {
+      const key = `${x},${y}`;
+      const stats = agg.positionStats.get(key);
+      if (stats && stats.totalCount > 0) {
+        const rate = stats.correctCount / stats.totalCount;
+        if (rate === 1) {
+          grid[y][x] = colorize('●', colors.cyan);
+        } else if (rate >= 0.9) {
+          grid[y][x] = colorize('9', colors.green);
+        } else if (rate >= 0.7) {
+          grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.yellow);
+        } else if (rate >= 0.5) {
+          grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.yellow);
+        } else {
+          grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.red);
+        }
+      }
+    }
+  }
+  console.log(grid.map((row) => row.join('')).join('\n'));
+}
+
+/**
+ * 位置ごとの詳細を表示する（処理時間順）
+ */
+function printAggregatedPositionDetails(agg: ReturnType<typeof aggregateResults>): void {
+  console.log(`\n--- Position Details (sorted by avg time) ---`);
+  console.log(`${'Position'.padEnd(12)}${'Accuracy'.padEnd(12)}${'Avg Time'.padEnd(12)}${'Min'.padEnd(10)}${'Max'.padEnd(10)}${'StdDev'.padEnd(10)}`);
+  console.log('-'.repeat(66));
+
+  const entries: { key: string; avgTime: number; accuracy: number; min: number; max: number; stdDev: number }[] = [];
+
+  for (const [key, stats] of agg.positionStats) {
+    if (stats.times.length > 0) {
+      const times = stats.times;
+      const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+      const min = Math.min(...times);
+      const max = Math.max(...times);
+      const variance = times.reduce((acc, t) => acc + Math.pow(t - avgTime, 2), 0) / times.length;
+      const stdDev = Math.sqrt(variance);
+      const accuracy = stats.correctCount / stats.totalCount;
+      entries.push({ key, avgTime, accuracy, min, max, stdDev });
+    }
+  }
+
+  entries.sort((a, b) => b.avgTime - a.avgTime);
+
+  for (const entry of entries) {
+    const [x, y] = entry.key.split(',');
+    const pos = `(${x},${y})`.padEnd(12);
+    const acc = `${(entry.accuracy * 100).toFixed(0)}%`.padEnd(12);
+    const avgTime = formatTime(entry.avgTime).padEnd(12);
+    const min = formatTime(entry.min).padEnd(10);
+    const max = formatTime(entry.max).padEnd(10);
+    const stdDev = formatTime(entry.stdDev).padEnd(10);
+    console.log(`${pos}${acc}${avgTime}${min}${max}${stdDev}`);
+  }
+}
+
+type JsonOutput = {
+  model: string;
+  maze: string;
+  strategy: string;
+  trials: number;
+  accuracy: number;
+  totalPositions: number;
+  correctCount: number;
+  avgTimeMs: number;
+  medianTimeMs: number;
+  minTimeMs: number;
+  maxTimeMs: number;
+  stdDevMs: number;
+  positions: {
+    x: number;
+    y: number;
+    accuracy: number;
+    avgTimeMs: number;
+    minTimeMs: number;
+    maxTimeMs: number;
+    stdDevMs: number;
+  }[];
+};
+
+function buildJsonOutput(
+  model: string,
+  maze: string,
+  strategy: string,
+  agg: ReturnType<typeof aggregateResults>,
+): JsonOutput {
+  const { times, correctCount, totalCount } = agg.overallStats;
+  times.sort((a, b) => a - b);
+  const sum = times.reduce((a, b) => a + b, 0);
+  const avg = sum / times.length;
+  const median = times[Math.floor(times.length / 2)] || 0;
+  const min = times[0] || 0;
+  const max = times[times.length - 1] || 0;
+  const variance = times.reduce((acc, t) => acc + Math.pow(t - avg, 2), 0) / times.length;
+  const stdDev = Math.sqrt(variance);
+
+  const positions: JsonOutput['positions'] = [];
+  for (const [key, stats] of agg.positionStats) {
+    if (stats.times.length > 0) {
+      const [x, y] = key.split(',').map(Number);
+      const posTimes = stats.times;
+      const posAvg = posTimes.reduce((a, b) => a + b, 0) / posTimes.length;
+      const posMin = Math.min(...posTimes);
+      const posMax = Math.max(...posTimes);
+      const posVariance = posTimes.reduce((acc, t) => acc + Math.pow(t - posAvg, 2), 0) / posTimes.length;
+      const posStdDev = Math.sqrt(posVariance);
+      positions.push({
+        x,
+        y,
+        accuracy: stats.correctCount / stats.totalCount,
+        avgTimeMs: Math.round(posAvg),
+        minTimeMs: posMin,
+        maxTimeMs: posMax,
+        stdDevMs: Math.round(posStdDev),
+      });
+    }
+  }
+  // 処理時間降順でソート
+  positions.sort((a, b) => b.avgTimeMs - a.avgTimeMs);
+
+  return {
+    model,
+    maze,
+    strategy,
+    trials: agg.totalTrials,
+    accuracy: (correctCount / totalCount) * 100,
+    totalPositions: totalCount / agg.totalTrials,
+    correctCount,
+    avgTimeMs: Math.round(avg),
+    medianTimeMs: Math.round(median),
+    minTimeMs: min,
+    maxTimeMs: max,
+    stdDevMs: Math.round(stdDev),
+    positions,
+  };
+}
+
 const main = defineCommand({
   meta: {
     name: 'detail',
-    description: '個別の結果ファイルの詳細を表示する',
+    description: '指定条件の結果ファイルを集約して詳細を表示する',
   },
   args: {
-    file: {
+    model: {
       type: 'positional',
-      description: '結果ファイルのパス（省略時は最新のファイル）',
+      required: true,
+      description: 'モデル名',
+    },
+    maze: {
+      type: 'positional',
+      required: true,
+      description: '迷路名',
+    },
+    strategy: {
+      type: 'positional',
+      required: true,
+      description: '戦略名',
+    },
+    json: {
+      type: 'boolean',
+      default: false,
+      description: 'JSON形式で出力（エージェント向け）',
     },
   },
   async run({ args }) {
-    const { file } = args;
+    const { model, maze, strategy, json } = args;
 
-    let targetFile: string;
-
-    if (file) {
-      targetFile = file;
-    } else {
-      // 最新のファイルを検索
-      const outputDir = './output';
-      const yamlFiles = await findYamlFiles(outputDir);
-      if (yamlFiles.length === 0) {
+    const outputDir = './output';
+    const yamlFiles = await findYamlFiles(outputDir);
+    if (yamlFiles.length === 0) {
+      if (json) {
+        console.log(JSON.stringify({ error: 'No result files found' }));
+      } else {
         logger.error('No result files found in output directory.');
-        return;
       }
-
-      // ファイル名はタイムスタンプなのでソートして最新を取得
-      yamlFiles.sort().reverse();
-      targetFile = yamlFiles[0];
-      logger.info(`Using latest result file: ${targetFile}`);
+      return;
     }
 
-    try {
-      const content = await fs.readFile(targetFile, 'utf-8');
-      const result = yaml.parse(content) as EvaluationResult;
+    // 条件に一致するファイルを読み込む
+    const matchingResults: EvaluationResult[] = [];
+    let mazeFile = '';
 
-      console.log(`\n=== ${path.basename(targetFile)} ===`);
-      console.log(`Model: ${result.modelName}`);
-      console.log(`Strategy: ${result.strategyName}`);
-      console.log(`Maze: ${result.mazeFile}`);
+    for (const file of yamlFiles) {
+      try {
+        const content = await fs.readFile(file, 'utf-8');
+        const result = yaml.parse(content) as EvaluationResult;
 
-      printStatistics(result);
-      await printTimingGrid(result);
-      printPositionDetails(result);
-    } catch (error) {
-      logger.error(`Failed to read or parse file ${targetFile}:`, error);
+        if (
+          result.modelName.includes(model) &&
+          result.mazeFile.includes(maze) &&
+          result.strategyName === strategy
+        ) {
+          matchingResults.push(result);
+          mazeFile = result.mazeFile;
+        }
+      } catch {
+        // skip invalid files
+      }
     }
+
+    if (matchingResults.length === 0) {
+      if (json) {
+        console.log(JSON.stringify({ error: `No results found for: model=${model}, maze=${maze}, strategy=${strategy}` }));
+      } else {
+        logger.error(`No results found for: model=${model}, maze=${maze}, strategy=${strategy}`);
+      }
+      return;
+    }
+
+    const agg = aggregateResults(matchingResults);
+
+    if (json) {
+      const output = buildJsonOutput(model, maze, strategy, agg);
+      console.log(JSON.stringify(output, null, 2));
+      return;
+    }
+
+    console.log(`\n=== Detail Analysis ===`);
+    console.log(`Model: ${model}`);
+    console.log(`Maze: ${maze}`);
+    console.log(`Strategy: ${strategy}`);
+    console.log(`Files: ${matchingResults.length}`);
+
+    printAggregatedStatistics(agg);
+    await printAggregatedAccuracyGrid(mazeFile, agg);
+    await printAggregatedTimingGrid(mazeFile, agg);
+    printAggregatedPositionDetails(agg);
   },
 });
 
