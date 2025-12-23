@@ -37,7 +37,7 @@
   - 5x5: 内部3x3、empty/straight以外は構造破綻
   - 7x7: 内部5x5、pass/detourは窮屈、loop/spiralは不可
   - 15x15: listは全形状、simple/matrix-sep/graphはopen/empty + spiralのみ
-- [ ] 最終的な迷路セットの決定・作成
+- [x] 最終的な迷路セットの決定・作成（22種: 5x5×2, 7x7×4, 11x11×8, 15x15×8）
 
 ### 1.3 その他パラメータ
 - [x] historyの有無: 両方やる
@@ -63,7 +63,7 @@
 
 - [ ] historyのパス生成アルゴリズム改善（もし使うなら）
 - [ ] 間引き実行機能（全マスではなく1/2や1/3でサンプリング）
-- [ ] 迷路ファイルの作成・整理
+- [x] 迷路ファイルの作成・整理
 - [x] 既存outputの整理 → docs/preliminary_results.md に保存後削除
 
 ## フェーズ3: データ取得
