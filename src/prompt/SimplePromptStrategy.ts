@@ -16,7 +16,7 @@ Maze:
 ${mazeString}
 
 You have visited the following positions in order:
-${history.map((p) => `(${p.x}, ${p.y})`).join(' -> ')}
+${history.map((p) => `(${p.x},${p.y})`).join(' -> ')}
 
 What is your next move? You can only move to adjacent (not diagonal) walkable paths.
 

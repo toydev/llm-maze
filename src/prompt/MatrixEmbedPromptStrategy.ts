@@ -48,7 +48,7 @@ Maze Matrix:
 [${matrixString}]
 
 You have visited the following positions in order:
-${history.map((p) => `(${p.x}, ${p.y})`).join(' -> ')}
+${history.map((p) => `(${p.x},${p.y})`).join(' -> ')}
 
 What is your next move from your current position?
 

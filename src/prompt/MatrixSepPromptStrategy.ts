@@ -33,12 +33,12 @@ Maze Matrix:
 [${matrixString}]
 
 Positions:
-- Start: (${maze.startPosition.x}, ${maze.startPosition.y})
-- End: (${maze.endPosition.x}, ${maze.endPosition.y})
-- Current: (${currentPosition.x}, ${currentPosition.y})
+- Start: (${maze.startPosition.x},${maze.startPosition.y})
+- End: (${maze.endPosition.x},${maze.endPosition.y})
+- Current: (${currentPosition.x},${currentPosition.y})
 
 You have visited the following positions in order:
-${history.map((p) => `(${p.x}, ${p.y})`).join(' -> ')}
+${history.map((p) => `(${p.x},${p.y})`).join(' -> ')}
 
 What is your next move from your current position?
 
