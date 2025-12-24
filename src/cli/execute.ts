@@ -4,6 +4,7 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { defineCommand, runMain } from 'citty';
 
+import { createProgressReporter } from '@/cli/view';
 import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
@@ -11,8 +12,6 @@ import { createValidMoveMap, createPathMapFromStart } from '@/maze/solver';
 import { Position } from '@/maze/types';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/schema';
-
-import { createProgressReporter } from './view';
 
 const logger = createLogger('execute');
 

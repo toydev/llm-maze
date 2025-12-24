@@ -1,4 +1,4 @@
-import { colors, colorize, formatDuration } from './format';
+import { colors, colorize, formatDuration } from '@/cli/view/format';
 
 type AccuracyData = Map<string, { correct: number; total: number }>;
 type TimingData = Map<string, number>;

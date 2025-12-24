@@ -3,7 +3,6 @@ import typescript from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
 import prettier from 'eslint-plugin-prettier';
-import jsxA11yPlugin from 'eslint-plugin-jsx-a11y';
 
 export default [
   // JavaScriptの基本設定
@@ -28,8 +27,6 @@ export default [
       '**/*.spec.ts',
       '**/*.spec.tsx',
       'src/test/**',
-      'src/pages/_app.js',
-      'src/pages/_document.js',
     ],
   },
 
@@ -41,13 +38,10 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        ecmaFeatures: {
-          jsx: true,
-        },
         project: './tsconfig.json',
       },
       globals: {
-        // ブラウザとNode.jsのグローバル変数
+        // Node.js globals
         console: 'readonly',
         process: 'readonly',
         Buffer: 'readonly',
@@ -57,10 +51,7 @@ export default [
         global: 'readonly',
         module: 'readonly',
         require: 'readonly',
-        window: 'readonly',
-        document: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
+        // Node.js 18+ built-in fetch API
         fetch: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
@@ -68,14 +59,12 @@ export default [
         Headers: 'readonly',
         Request: 'readonly',
         Response: 'readonly',
-        JSX: 'readonly',
       },
     },
     plugins: {
       '@typescript-eslint': typescript,
       'import': importPlugin,
       'prettier': prettier,
-      'jsx-a11y': jsxA11yPlugin,
     },
     settings: {
       'import/resolver': {
@@ -96,9 +85,6 @@ export default [
         },
       ],
       '@typescript-eslint/no-explicit-any': 'off',
-
-      // アクセシビリティ（無効化）
-      // ...jsxA11yPlugin.configs.recommended.rules,
 
       // Prettier
       'prettier/prettier': 'error',

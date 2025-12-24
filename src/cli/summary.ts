@@ -2,11 +2,10 @@ import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
 
+import { formatDuration, renderAccuracyGrid } from '@/cli/view';
 import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
-
-import { formatDuration, renderAccuracyGrid } from './view';
 
 const logger = createLogger('summary');
 

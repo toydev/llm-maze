@@ -1,3 +1,3 @@
-export { colors, colorize, formatDuration, formatElapsed } from './format';
-export { renderAccuracyGrid, renderTimingGrid } from './grid';
-export { createProgressReporter, type ProgressReporter } from './progress';
+export { colors, colorize, formatDuration, formatElapsed } from '@/cli/view/format';
+export { renderAccuracyGrid, renderTimingGrid } from '@/cli/view/grid';
+export { createProgressReporter, type ProgressReporter } from '@/cli/view/progress';

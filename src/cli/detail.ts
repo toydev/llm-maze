@@ -1,10 +1,9 @@
 import { defineCommand, runMain } from 'citty';
 
+import { formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/cli/view';
 import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
-
-import { formatDuration, renderAccuracyGrid, renderTimingGrid } from './view';
 
 const logger = createLogger('detail');
 

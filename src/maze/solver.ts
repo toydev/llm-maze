@@ -129,4 +129,3 @@ export function createPathMapFromStart(maze: Maze): PathMap {
 
   return pathMap;
 }
-
