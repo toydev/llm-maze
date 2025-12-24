@@ -2,32 +2,11 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
-import yaml from 'yaml';
 
+import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
-import { Move, Position } from '@/maze/types';
 
 const logger = createLogger('summary');
-
-type PositionResult = {
-  position: Position;
-  isCorrect: boolean;
-  llmMove: Move;
-  validMoves: Move[];
-  timeMs?: number;
-};
-
-type EvaluationResult = {
-  mazeFile: string;
-  modelName: string;
-  strategyName: string;
-  totalPositions: number;
-  correctMoves: number;
-  accuracy: number;
-  totalTimeMs: number;
-  averageTimePerPositionMs: number;
-  results: PositionResult[];
-};
 
 type AggregatedResult = {
   totalRuns: number;
@@ -42,47 +21,6 @@ type AggregatedResult = {
 };
 
 type Summary = Map<string, Map<string, Map<string, AggregatedResult>>>;
-
-async function findYamlFiles(dir: string): Promise<string[]> {
-  let files: string[] = [];
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        files = files.concat(await findYamlFiles(fullPath));
-      } else if (entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))) {
-        files.push(fullPath);
-      }
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.error(`Error reading directory ${dir}:`, error);
-    }
-  }
-  return files;
-}
-
-async function loadResults(): Promise<EvaluationResult[]> {
-  const outputDir = './output';
-  const yamlFiles = await findYamlFiles(outputDir);
-  if (yamlFiles.length === 0) {
-    logger.warn(`No YAML result files found in ${outputDir}.`);
-    return [];
-  }
-
-  const results: EvaluationResult[] = [];
-  for (const file of yamlFiles) {
-    try {
-      const content = await fs.readFile(file, 'utf-8');
-      const data = yaml.parse(content) as EvaluationResult;
-      results.push(data);
-    } catch (error) {
-      logger.error(`Failed to parse YAML file ${file}:`, error);
-    }
-  }
-  return results;
-}
 
 async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
   const summary: Summary = new Map();
@@ -271,6 +209,7 @@ const main = defineCommand({
     logger.info('Starting evaluation summary...');
     let results = await loadResults();
     if (results.length === 0) {
+      logger.warn('No result files found in output directory.');
       return;
     }
 

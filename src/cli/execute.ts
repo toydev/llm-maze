@@ -2,37 +2,17 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
-import yaml from 'yaml';
 
+import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
 import LLM from '@/llm/LLM';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 import { createValidMoveMap, createPathMapFromStart } from '@/maze/solver';
-import { Move, Position } from '@/maze/types';
+import { Position } from '@/maze/types';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/schema';
 
 const logger = createLogger('execute');
-
-type PositionResult = {
-  position: Position;
-  isCorrect: boolean;
-  llmMove: Move | 'error';
-  validMoves: Move[];
-  timeMs: number;
-};
-
-type EvaluationResult = {
-  mazeFile: string;
-  modelName: string;
-  strategyName: string;
-  totalPositions: number;
-  correctMoves: number;
-  accuracy: number;
-  totalTimeMs: number;
-  averageTimePerPositionMs: number;
-  results: PositionResult[];
-};
 
 async function executeStrategy(mazeFile: string, strategyName: string, strategy: PromptStrategy, modelName: string): Promise<EvaluationResult> {
   logger.info(`Executing for maze: ${mazeFile}, strategy: ${strategyName}, model: ${modelName}`);
@@ -148,20 +128,6 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   };
 }
 
-async function saveResult(result: EvaluationResult): Promise<void> {
-  const timestamp = new Date().toISOString().replace(/:/g, '-');
-  const modelId = result.modelName.replace(/[:/]/g, '_'); // ollama:gemma3:latest -> ollama_gemma3_latest
-  const mazeName = path.basename(result.mazeFile, '.txt');
-  const outputDir = path.join('output', modelId, result.strategyName, mazeName);
-  await fs.mkdir(outputDir, { recursive: true });
-
-  const filePath = path.join(outputDir, `${timestamp}.yaml`);
-  const yamlData = yaml.stringify(result);
-
-  await fs.writeFile(filePath, yamlData);
-  logger.info(`Evaluation result saved to: ${filePath}`);
-}
-
 const strategiesMap = new Map<string, PromptStrategy>([
   ['simple', new SimplePromptStrategy()],
   ['graph', new GraphPromptStrategy()],
@@ -259,7 +225,8 @@ const main = defineCommand({
 
           try {
             const result = await executeStrategy(mazeFile, strategyName, strategy, model);
-            await saveResult(result);
+            const savedPath = await saveResult(result);
+            logger.info(`Saved: ${savedPath}`);
           } catch (error) {
             logger.error(`Failed: ${runInfo}`, error);
           }

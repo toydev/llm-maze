@@ -1,53 +1,11 @@
 import fs from 'fs/promises';
-import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
-import yaml from 'yaml';
 
+import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
-import { Move, Position } from '@/maze/types';
 
 const logger = createLogger('detail');
-
-type PositionResult = {
-  position: Position;
-  isCorrect: boolean;
-  llmMove: Move | 'error';
-  validMoves: Move[];
-  timeMs?: number;
-};
-
-type EvaluationResult = {
-  mazeFile: string;
-  modelName: string;
-  strategyName: string;
-  totalPositions: number;
-  correctMoves: number;
-  accuracy: number;
-  totalTimeMs: number;
-  averageTimePerPositionMs: number;
-  results: PositionResult[];
-};
-
-async function findYamlFiles(dir: string): Promise<string[]> {
-  let files: string[] = [];
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        files = files.concat(await findYamlFiles(fullPath));
-      } else if (entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))) {
-        files.push(fullPath);
-      }
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.error(`Error reading directory ${dir}:`, error);
-    }
-  }
-  return files;
-}
 
 const colors = {
   cyan: '\x1b[36m',
@@ -351,9 +309,8 @@ const main = defineCommand({
   async run({ args }) {
     const { model, maze, strategy, json } = args;
 
-    const outputDir = './output';
-    const yamlFiles = await findYamlFiles(outputDir);
-    if (yamlFiles.length === 0) {
+    const allResults = await loadResults();
+    if (allResults.length === 0) {
       if (json) {
         console.log(JSON.stringify({ error: 'No result files found' }));
       } else {
@@ -362,22 +319,7 @@ const main = defineCommand({
       return;
     }
 
-    const matchingResults: EvaluationResult[] = [];
-    let mazeFile = '';
-
-    for (const file of yamlFiles) {
-      try {
-        const content = await fs.readFile(file, 'utf-8');
-        const result = yaml.parse(content) as EvaluationResult;
-
-        if (result.modelName.includes(model) && result.mazeFile.includes(maze) && result.strategyName === strategy) {
-          matchingResults.push(result);
-          mazeFile = result.mazeFile;
-        }
-      } catch {
-        // skip invalid files
-      }
-    }
+    const matchingResults = allResults.filter((r) => r.modelName.includes(model) && r.mazeFile.includes(maze) && r.strategyName === strategy);
 
     if (matchingResults.length === 0) {
       if (json) {
@@ -387,6 +329,8 @@ const main = defineCommand({
       }
       return;
     }
+
+    const mazeFile = matchingResults[0].mazeFile;
 
     const agg = aggregateResults(matchingResults);
 
