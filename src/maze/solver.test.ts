@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Maze } from './Maze';
-import { createValidMoveMap, createPathMapFromStart } from './solver';
+import { createGoalwardMoveMap, createPathMapFromStart } from './solver';
 
-describe('createValidMoveMap', () => {
+describe('createGoalwardMoveMap', () => {
   it('returns moves that approach the goal', () => {
     const layout = [
       '#####',
@@ -12,7 +12,7 @@ describe('createValidMoveMap', () => {
       '#####',
     ];
     const maze = new Maze(layout);
-    const moveMap = createValidMoveMap(maze);
+    const moveMap = createGoalwardMoveMap(maze);
 
     // Distance from goal(3,3):
     // (1,1)=4, (2,1)=3, (3,1)=2
@@ -38,7 +38,7 @@ describe('createValidMoveMap', () => {
       '#####',
     ];
     const maze = new Maze(layout);
-    const moveMap = createValidMoveMap(maze);
+    const moveMap = createGoalwardMoveMap(maze);
 
     // Distance from goal(3,3):
     // (1,1)=4, (2,1)=3, (3,1)=2

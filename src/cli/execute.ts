@@ -8,7 +8,7 @@ import { createProgressReporter } from '@/cli/view';
 import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
-import { createValidMoveMap, createPathMapFromStart } from '@/maze/solver';
+import { createGoalwardMoveMap, createPathMapFromStart } from '@/maze/solver';
 import { Position } from '@/maze/types';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/schema';
@@ -19,13 +19,13 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   logger.info(`Executing for maze: ${mazeFile}, strategy: ${strategyName}, model: ${modelName}`);
 
   const maze = await Maze.fromFile(mazeFile);
-  const validMoveMap = createValidMoveMap(maze);
+  const goalwardMoveMap = createGoalwardMoveMap(maze);
   const pathMap = createPathMapFromStart(maze);
 
   const llm = new ChatOllama({ model: modelName });
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
-  const evaluationPositions = Array.from(validMoveMap.keys());
+  const evaluationPositions = Array.from(goalwardMoveMap.keys());
   const positionResults: PositionResult[] = [];
 
   const progress = createProgressReporter(evaluationPositions.length);
@@ -34,7 +34,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   for (const posKey of evaluationPositions) {
     const [x, y] = posKey.split(',').map(Number);
     const currentPos: Position = { x, y };
-    const correctMoveSet = new Set(validMoveMap.get(posKey)!);
+    const correctMoveSet = new Set(goalwardMoveMap.get(posKey)!);
 
     const history = pathMap.get(posKey) ?? [currentPos];
     const prompt = strategy.build(maze, history);
