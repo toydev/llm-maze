@@ -6,7 +6,7 @@ import log from 'loglevel';
 const isTest = process.env.VITEST === 'true';
 
 const LOG_BASE_DIR = path.join(process.cwd(), 'log');
-const LOG_DIR = isTest ? path.join(LOG_BASE_DIR, 'test') : path.join(LOG_BASE_DIR, 'server');
+const LOG_DIR = isTest ? path.join(LOG_BASE_DIR, 'test') : path.join(LOG_BASE_DIR, 'app');
 const LOG_FILE = path.join(LOG_DIR, 'application.log');
 const LOG_MAX_FILE_SIZE = 10 * 1024 * 1024;
 const LOG_MAX_FILES = 10;
