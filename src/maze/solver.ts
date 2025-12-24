@@ -102,6 +102,8 @@ export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
 
 /**
  * BFSを用いて、スタートから全ての到達可能なマスへの最短経路を計算します。
+ * ジグザグ化: 各位置でゴールへの残り距離に基づいて探索順序を決定し、
+ * 一方向への偏りを軽減します。
  * @param maze 迷路オブジェクト
  * @returns 各位置への最短経路をマッピングしたPathMap
  */
@@ -110,18 +112,32 @@ export function createPathMapFromStart(maze: Maze): PathMap {
   const parentMap = new Map<string, Position | null>();
   const queue: Position[] = [maze.startPosition];
   const startKey = `${maze.startPosition.x},${maze.startPosition.y}`;
+  const end = maze.endPosition;
 
   parentMap.set(startKey, null);
 
   while (queue.length > 0) {
     const current = queue.shift()!;
 
-    const neighbors: Position[] = [
-      { x: current.x, y: current.y - 1 }, // up
-      { x: current.x, y: current.y + 1 }, // down
-      { x: current.x - 1, y: current.y }, // left
-      { x: current.x + 1, y: current.y }, // right
-    ];
+    // ゴールへの残り距離を計算
+    const dx = Math.abs(end.x - current.x);
+    const dy = Math.abs(end.y - current.y);
+
+    // dy >= dx なら縦移動優先、そうでなければ横移動優先（ジグザグ化）
+    const neighbors: Position[] =
+      dy >= dx
+        ? [
+            { x: current.x, y: current.y - 1 }, // up
+            { x: current.x, y: current.y + 1 }, // down
+            { x: current.x - 1, y: current.y }, // left
+            { x: current.x + 1, y: current.y }, // right
+          ]
+        : [
+            { x: current.x - 1, y: current.y }, // left
+            { x: current.x + 1, y: current.y }, // right
+            { x: current.x, y: current.y - 1 }, // up
+            { x: current.x, y: current.y + 1 }, // down
+          ];
 
     for (const neighbor of neighbors) {
       const neighborKey = `${neighbor.x},${neighbor.y}`;
