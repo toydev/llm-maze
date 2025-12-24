@@ -1,34 +1,45 @@
+import fs from 'fs';
+import path from 'path';
+
 import log from 'loglevel';
 
-const isBrowser = typeof window !== 'undefined';
 const isTest = process.env.VITEST === 'true';
 
-let fs: any, path: any;
-let LOG_BASE_DIR: string;
-let LOG_DIR: string;
+const LOG_BASE_DIR = path.join(process.cwd(), 'log');
+const LOG_DIR = isTest ? path.join(LOG_BASE_DIR, 'test') : path.join(LOG_BASE_DIR, 'server');
+const LOG_FILE = path.join(LOG_DIR, 'application.log');
 const LOG_MAX_FILE_SIZE = 10 * 1024 * 1024;
 const LOG_MAX_FILES = 10;
 
-const fileSizeCounters: Map<string, number> = new Map();
+let currentFileSize = 0;
 
-if (!isBrowser) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  fs = require('fs');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  path = require('path');
-  LOG_BASE_DIR = path.join(process.cwd(), 'log');
-  LOG_DIR = isTest ? path.join(LOG_BASE_DIR, 'test') : path.join(LOG_BASE_DIR, 'server');
-
-  if (!fs.existsSync(LOG_DIR)) {
-    fs.mkdirSync(LOG_DIR, { recursive: true });
-  }
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
-function getLogFilename(logname: string): string {
-  if (logname.startsWith('agent')) {
-    return 'agent.log';
+if (fs.existsSync(LOG_FILE)) {
+  currentFileSize = fs.statSync(LOG_FILE).size;
+}
+
+function rotateLogFile(): void {
+  for (let i = LOG_MAX_FILES - 1; i >= 1; i--) {
+    const currentFile = `${LOG_FILE}.${i}`;
+    const nextFile = `${LOG_FILE}.${i + 1}`;
+
+    if (fs.existsSync(currentFile)) {
+      if (i === LOG_MAX_FILES - 1) {
+        fs.unlinkSync(currentFile);
+      } else {
+        fs.renameSync(currentFile, nextFile);
+      }
+    }
   }
-  return 'application.log';
+
+  if (fs.existsSync(LOG_FILE)) {
+    fs.renameSync(LOG_FILE, `${LOG_FILE}.1`);
+  }
+
+  currentFileSize = 0;
 }
 
 function createLogger(logname: string): log.Logger {
@@ -38,100 +49,42 @@ function createLogger(logname: string): log.Logger {
     return logger;
   }
 
-  if (!isBrowser) {
-    const filename = getLogFilename(logname);
-    const filepath = path.join(LOG_DIR, filename);
-
-    if (!fileSizeCounters.has(filepath)) {
+  logger.methodFactory = (methodName, _logLevel, loggerName) => {
+    return (...args: any[]) => {
       try {
-        if (fs.existsSync(filepath)) {
-          const stat = fs.statSync(filepath);
-          fileSizeCounters.set(filepath, stat.size);
-        } else {
-          fileSizeCounters.set(filepath, 0);
+        const now = new Date();
+        const timestamp = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().replace('T', ' ').split('.')[0];
+        const source = loggerName ? ` [${String(loggerName)}]` : '';
+
+        let fullMessage = String(args[0] || '');
+        for (let i = 1; i < args.length; i++) {
+          const arg = args[i];
+          if (arg instanceof Error) {
+            fullMessage += ` ${arg.stack || arg.message || arg}`;
+          } else if (arg !== undefined) {
+            fullMessage += ` ${String(arg)}`;
+          }
         }
+
+        const logLine = `${timestamp} ${methodName.toUpperCase()}${source}: ${fullMessage}\n`;
+        const logLineSize = Buffer.byteLength(logLine, 'utf8');
+
+        if (currentFileSize + logLineSize > LOG_MAX_FILE_SIZE) {
+          rotateLogFile();
+        }
+
+        fs.appendFileSync(LOG_FILE, logLine);
+        currentFileSize += logLineSize;
       } catch {
-        fileSizeCounters.set(filepath, 0);
+        // ignore file write errors
       }
-    }
-
-    logger.methodFactory = (methodName, _logLevel, loggerName) => {
-      return (...args: any[]) => {
-        try {
-          const now = new Date();
-          const timestamp = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().replace('T', ' ').split('.')[0];
-          const source = loggerName ? ` [${String(loggerName)}]` : '';
-
-          let fullMessage = String(args[0] || '');
-          for (let i = 1; i < args.length; i++) {
-            const arg = args[i];
-            if (arg instanceof Error) {
-              fullMessage += ` ${arg.stack || arg.message || arg}`;
-            } else if (arg !== undefined) {
-              fullMessage += ` ${String(arg)}`;
-            }
-          }
-
-          const logLine = `${timestamp} ${methodName.toUpperCase()}${source}: ${fullMessage}\n`;
-
-          const currentSize = fileSizeCounters.get(filepath) || 0;
-          const logLineSize = Buffer.byteLength(logLine, 'utf8');
-
-          if (currentSize + logLineSize > LOG_MAX_FILE_SIZE) {
-            rotateLogFile(filename);
-          }
-
-          fs.appendFileSync(filepath, logLine);
-          fileSizeCounters.set(filepath, (fileSizeCounters.get(filepath) || 0) + logLineSize);
-        } catch {
-          // ignore file write errors
-        }
-      };
     };
-  }
+  };
 
   (logger as any).__customized = true;
-
-  let logLevel = 'info';
-  if (isBrowser) {
-    if (typeof localStorage !== 'undefined') {
-      logLevel = localStorage.getItem('LOG_LEVEL') || 'info';
-    }
-  } else {
-    logLevel = process.env.LOG_LEVEL || 'info';
-  }
-  logger.setLevel(logLevel as log.LogLevelDesc);
+  logger.setLevel((process.env.LOG_LEVEL || 'info') as log.LogLevelDesc);
 
   return logger;
-}
-
-function rotateLogFile(filename: string): void {
-  if (isBrowser || !fs) return;
-
-  const filepath = path.join(LOG_DIR, filename);
-
-  try {
-    for (let i = LOG_MAX_FILES - 1; i >= 1; i--) {
-      const currentFile = `${filepath}.${i}`;
-      const nextFile = `${filepath}.${i + 1}`;
-
-      if (fs.existsSync(currentFile)) {
-        if (i === LOG_MAX_FILES - 1) {
-          fs.unlinkSync(currentFile);
-        } else {
-          fs.renameSync(currentFile, nextFile);
-        }
-      }
-    }
-
-    if (fs.existsSync(filepath)) {
-      fs.renameSync(filepath, `${filepath}.1`);
-    }
-
-    fileSizeCounters.set(filepath, 0);
-  } catch (error) {
-    console.error(`[Logger] Rotation failed for ${filename}:`, error instanceof Error ? error.message : error);
-  }
 }
 
 export { createLogger };
