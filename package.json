@@ -9,8 +9,6 @@
     "lint": "eslint --fix .",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:diff": "diff -r test/snapshot/actual test/snapshot/expected || echo 'Snapshot diff found. Review changes and run test:update.'",
-    "test:update": "VITEST_UPDATE_SNAPSHOTS=true vitest",
     "execute": "vite-node src/cli/execute.ts",
     "summary": "vite-node src/cli/summary.ts",
     "detail": "vite-node src/cli/detail.ts"
