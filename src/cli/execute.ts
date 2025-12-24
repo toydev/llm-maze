@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import { ChatOllama } from '@langchain/ollama';
 import { defineCommand, runMain } from 'citty';
 
 import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
-import LLM from '@/llm/LLM';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 import { createValidMoveMap, createPathMapFromStart } from '@/maze/solver';
@@ -21,10 +21,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   const validMoveMap = createValidMoveMap(maze);
   const pathMap = createPathMapFromStart(maze);
 
-  const llm = LLM.get(modelName);
-  if (!llm) {
-    throw new Error(`Failed to get LLM instance for model: ${modelName}`);
-  }
+  const llm = new ChatOllama({ model: modelName });
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
   const evaluationPositions = Array.from(validMoveMap.keys());
@@ -144,7 +141,7 @@ const main = defineCommand({
     model: {
       type: 'positional',
       required: true,
-      description: 'LLM model name (e.g., gemini:gemini-2.5-flash, ollama:gemma3:latest)',
+      description: 'Ollama model name (e.g., gpt-oss, gemma3:latest)',
     },
     maze: {
       type: 'positional',
@@ -173,15 +170,13 @@ const main = defineCommand({
 
     if (!noWarmup) {
       process.stdout.write('Warming up LLM...');
-      const llm = LLM.get(model);
-      if (llm) {
-        try {
-          await llm.invoke('Hello');
-          process.stdout.write(' done.\n');
-        } catch (error) {
-          process.stdout.write(' failed (continuing anyway).\n');
-          logger.warn('Warmup failed:', error);
-        }
+      const llm = new ChatOllama({ model });
+      try {
+        await llm.invoke('Hello');
+        process.stdout.write(' done.\n');
+      } catch (error) {
+        process.stdout.write(' failed (continuing anyway).\n');
+        logger.warn('Warmup failed:', error);
       }
     }
 
