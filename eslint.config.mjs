@@ -5,10 +5,9 @@ import importPlugin from 'eslint-plugin-import';
 import prettier from 'eslint-plugin-prettier';
 
 export default [
-  // JavaScriptの基本設定
   js.configs.recommended,
 
-  // 全体設定
+  // Ignores
   {
     ignores: [
       'node_modules/**',
@@ -30,7 +29,7 @@ export default [
     ],
   },
 
-  // TypeScript設定
+  // TypeScript
   {
     files: ['**/*.{js,ts}'],
     languageOptions: {
@@ -74,7 +73,6 @@ export default [
       },
     },
     rules: {
-      // TypeScript関連
       ...typescript.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -85,18 +83,16 @@ export default [
         },
       ],
       '@typescript-eslint/no-explicit-any': 'off',
-
-      // Prettier
       'prettier/prettier': 'error',
 
-      // Import関連
+      // Import
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
               group: ['../', './'],
-              message: '相対パスは禁止です。絶対パス(@/)を使用してください。',
+              message: 'Relative imports are forbidden. Use absolute paths (@/).',
             },
           ],
         },
@@ -130,14 +126,12 @@ export default [
       ],
       'import/no-unresolved': 'error',
       'import/no-duplicates': 'error',
-
-      // JavaScriptの基本ルールの調整
-      'no-unused-vars': 'off', // TypeScriptのルールを使用
-      'no-undef': 'off', // TypeScriptが処理
+      'no-unused-vars': 'off',
+      'no-undef': 'off',
     },
   },
 
-  // テストファイル用の設定
+  // Test files
   {
     files: ['**/*.test.{js,ts}', '**/*.spec.{js,ts}'],
     rules: {
