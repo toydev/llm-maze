@@ -10,4 +10,5 @@ export interface Position {
   y: number;
 }
 
-export type Move = 'up' | 'down' | 'left' | 'right';
+export const MOVES = ['up', 'down', 'left', 'right'] as const;
+export type Move = (typeof MOVES)[number];
