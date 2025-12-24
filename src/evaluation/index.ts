@@ -9,7 +9,7 @@ import { Move } from '@/prompt/promptTemplate';
 export type PositionResult = {
   position: Position;
   isCorrect: boolean;
-  llmMove: Move | 'error';
+  llmMove: Move | null;
   validMoves: Move[];
   timeMs?: number;
 };

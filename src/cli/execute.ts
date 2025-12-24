@@ -59,7 +59,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
       positionResults.push({
         position: currentPos,
         isCorrect: false,
-        llmMove: 'error',
+        llmMove: null,
         validMoves: Array.from(correctMoveSet),
         timeMs: Date.now() - posStartTime,
       });
