@@ -15,7 +15,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: './setupTests.js',
     silent: true,
   },
   plugins: [],

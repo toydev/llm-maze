@@ -18,7 +18,6 @@ export default [
       '*.config.js',
       '*.config.mjs',
       '*.config.cjs',
-      'setupTests.js',
       'scripts/**/*.js',
       'scripts/**/*.mjs',
       '**/*.test.ts',
