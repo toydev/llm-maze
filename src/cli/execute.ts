@@ -7,7 +7,7 @@ import yaml from 'yaml';
 import LLM from '@/llm/LLM';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
-import { createOptimalMoveMap, createPathMapFromStart } from '@/maze/solver';
+import { createValidMoveMap, createPathMapFromStart } from '@/maze/solver';
 import { Move, Position } from '@/maze/types';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/schema';
@@ -18,7 +18,7 @@ type PositionResult = {
   position: Position;
   isCorrect: boolean;
   llmMove: Move | 'error';
-  optimalMoves: Move[];
+  validMoves: Move[];
   timeMs: number;
 };
 
@@ -39,7 +39,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
 
   const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
   const maze = new Maze(mazeLayout);
-  const optimalMoveMap = createOptimalMoveMap(maze);
+  const validMoveMap = createValidMoveMap(maze);
   const pathMap = createPathMapFromStart(maze);
 
   const llm = LLM.get(modelName);
@@ -48,7 +48,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   }
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
-  const evaluationPositions = Array.from(optimalMoveMap.keys());
+  const evaluationPositions = Array.from(validMoveMap.keys());
   const positionResults: PositionResult[] = [];
   const totalCount = evaluationPositions.length;
 
@@ -87,7 +87,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   for (const posKey of evaluationPositions) {
     const [x, y] = posKey.split(',').map(Number);
     const currentPos: Position = { x, y };
-    const correctMoveSet = new Set(optimalMoveMap.get(posKey)!);
+    const correctMoveSet = new Set(validMoveMap.get(posKey)!);
 
     const history = pathMap.get(posKey) ?? [currentPos];
     const prompt = strategy.build(maze, history);
@@ -103,7 +103,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
         position: currentPos,
         isCorrect,
         llmMove,
-        optimalMoves: Array.from(correctMoveSet),
+        validMoves: Array.from(correctMoveSet),
         timeMs: posTimeMs,
       });
 
@@ -116,7 +116,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
         position: currentPos,
         isCorrect: false,
         llmMove: 'error',
-        optimalMoves: Array.from(correctMoveSet),
+        validMoves: Array.from(correctMoveSet),
         timeMs: posTimeMs,
       });
 

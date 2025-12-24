@@ -3,7 +3,7 @@ import { Position, Move } from '@/maze/types';
 
 type DistanceMap = Map<string, number>;
 export type PathMap = Map<string, Position[]>;
-export type OptimalMoveMap = Map<string, Move[]>;
+export type ValidMoveMap = Map<string, Move[]>;
 
 function calculateDistancesFromEnd(maze: Maze): DistanceMap {
   const distances: DistanceMap = new Map();
@@ -36,9 +36,9 @@ function calculateDistancesFromEnd(maze: Maze): DistanceMap {
   return distances;
 }
 
-export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
+export function createValidMoveMap(maze: Maze): ValidMoveMap {
   const distances = calculateDistancesFromEnd(maze);
-  const optimalMoves: OptimalMoveMap = new Map();
+  const validMoves: ValidMoveMap = new Map();
 
   for (const [posKey, distance] of distances.entries()) {
     const [x, y] = posKey.split(',').map(Number);
@@ -66,11 +66,11 @@ export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
     }
 
     if (moves.length > 0) {
-      optimalMoves.set(posKey, moves);
+      validMoves.set(posKey, moves);
     }
   }
 
-  return optimalMoves;
+  return validMoves;
 }
 
 export function createPathMapFromStart(maze: Maze): PathMap {

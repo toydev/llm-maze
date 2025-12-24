@@ -13,7 +13,7 @@ type PositionResult = {
   position: Position;
   isCorrect: boolean;
   llmMove: Move | 'error';
-  optimalMoves: Move[];
+  validMoves: Move[];
   timeMs?: number;
 };
 
