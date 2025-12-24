@@ -1,6 +1,7 @@
 import { Maze } from '@/maze/Maze';
 import { CellType, Position } from '@/maze/types';
 import { PromptStrategy } from '@/prompt/PromptStrategy';
+import { COORDINATE_SYSTEM_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/promptTemplate';
 
 export class ListPromptStrategy implements PromptStrategy {
   private generateWalkableList(maze: Maze): string[] {
@@ -32,20 +33,14 @@ Positions:
 - End: (${maze.endPosition.x},${maze.endPosition.y})
 - Current: (${currentPosition.x},${currentPosition.y})
 
-You have visited the following positions in order:
-${history.map((p) => `(${p.x},${p.y})`).join(' -> ')}
+${formatVisitHistory(history)}
 
 What is your next move from your current position?
 You can only move to an adjacent walkable position (not diagonal).
 
-Note: In this coordinate system, y increases downward.
-- up: y-1
-- down: y+1
-- left: x-1
-- right: x+1
+${COORDINATE_SYSTEM_NOTE}
 
-Return your answer as a JSON object with a "move" key, which can be one of "up", "down", "left", or "right".
-Example: {"move": "up"}
+${RESPONSE_FORMAT_INSTRUCTION}
 `;
   }
 }

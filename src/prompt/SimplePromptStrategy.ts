@@ -1,6 +1,7 @@
 import { Maze } from '@/maze/Maze';
 import { Position } from '@/maze/types';
 import { PromptStrategy } from '@/prompt/PromptStrategy';
+import { COORDINATE_SYSTEM_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/promptTemplate';
 
 export class SimplePromptStrategy implements PromptStrategy {
   private renderMaze(maze: Maze, currentPosition: Position): string {
@@ -26,19 +27,13 @@ You are a bot in a 2D maze. Your goal is to find the path from 'S' to 'E'.
 Maze:
 ${mazeString}
 
-You have visited the following positions in order:
-${history.map((p) => `(${p.x},${p.y})`).join(' -> ')}
+${formatVisitHistory(history)}
 
 What is your next move? You can only move to adjacent (not diagonal) walkable paths.
 
-Note: In this coordinate system, y increases downward.
-- up: y-1
-- down: y+1
-- left: x-1
-- right: x+1
+${COORDINATE_SYSTEM_NOTE}
 
-Return your answer as a JSON object with a "move" key, which can be one of "up", "down", "left", or "right".
-Example: {"move": "up"}
+${RESPONSE_FORMAT_INSTRUCTION}
 `;
   }
 }
