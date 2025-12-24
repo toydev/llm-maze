@@ -9,6 +9,3 @@ export interface Position {
   x: number;
   y: number;
 }
-
-export const MOVES = ['up', 'down', 'left', 'right'] as const;
-export type Move = (typeof MOVES)[number];

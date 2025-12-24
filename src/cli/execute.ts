@@ -6,12 +6,12 @@ import { defineCommand, runMain } from 'citty';
 
 import { createProgressReporter } from '@/cli/view';
 import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
+import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/evaluation/solver';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
-import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/maze/solver';
 import { Position } from '@/maze/types';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixPromptStrategy, ListPromptStrategy } from '@/prompt';
-import { MoveActionSchema } from '@/prompt/schema';
+import { MoveActionSchema } from '@/prompt/promptTemplate';
 
 const logger = createLogger('execute');
 
