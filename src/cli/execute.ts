@@ -1,5 +1,3 @@
-// src/execute.ts
-
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -11,7 +9,6 @@ import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 import { createOptimalMoveMap, createPathMapFromStart } from '@/maze/solver';
 import { Move, Position } from '@/maze/types';
-import { MoveActionSchema } from '@/runner/outputParser';
 import {
   PromptStrategy,
   SimplePromptStrategy,
@@ -19,7 +16,8 @@ import {
   MatrixEmbedPromptStrategy,
   MatrixSepPromptStrategy,
   ListPromptStrategy,
-} from '@/runner/prompt';
+} from '@/prompt';
+import { MoveActionSchema } from '@/prompt/schema';
 
 const logger = createLogger('execute');
 

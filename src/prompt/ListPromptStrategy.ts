@@ -1,6 +1,6 @@
 import { Maze } from '@/maze/Maze';
 import { CellType, Position } from '@/maze/types';
-import { PromptStrategy } from '@/runner/prompt/PromptStrategy';
+import { PromptStrategy } from '@/prompt/PromptStrategy';
 
 export class ListPromptStrategy implements PromptStrategy {
   private generateWalkableList(maze: Maze): string[] {

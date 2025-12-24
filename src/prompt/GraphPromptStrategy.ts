@@ -1,6 +1,6 @@
 import { Maze } from '@/maze/Maze';
 import { Position } from '@/maze/types';
-import { PromptStrategy } from '@/runner/prompt/PromptStrategy';
+import { PromptStrategy } from '@/prompt/PromptStrategy';
 
 type AdjacencyList = Record<string, string[]>;
 
