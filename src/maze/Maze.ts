@@ -65,21 +65,6 @@ export class Maze {
     this.endPosition = end;
   }
 
-  public toString(currentPosition?: Position): string {
-    return this.grid
-      .map((row, y) =>
-        row
-          .map((cell, x) => {
-            if (currentPosition && currentPosition.x === x && currentPosition.y === y) {
-              return CellType.Current;
-            }
-            return cell;
-          })
-          .join(''),
-      )
-      .join('\n');
-  }
-
   public getCellType(position: Position): CellType | undefined {
     if (position.y < 0 || position.y >= this.height || position.x < 0 || position.x >= this.width) {
       return undefined;

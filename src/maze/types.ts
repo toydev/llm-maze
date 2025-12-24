@@ -1,9 +1,8 @@
 export enum CellType {
-  Path = '⬜️',
-  Wall = '⬛️',
+  Path = ' ',
+  Wall = '#',
   Start = 'S',
   End = 'E',
-  Current = 'C',
 }
 
 export interface Position {

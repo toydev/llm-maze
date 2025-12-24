@@ -3,13 +3,24 @@ import { Position } from '@/maze/types';
 import { PromptStrategy } from '@/prompt/PromptStrategy';
 
 export class SimplePromptStrategy implements PromptStrategy {
+  private renderMaze(maze: Maze, currentPosition: Position): string {
+    return maze.layout
+      .map((row, y) =>
+        row
+          .split('')
+          .map((char, x) => (x === currentPosition.x && y === currentPosition.y ? 'C' : char))
+          .join(''),
+      )
+      .join('\n');
+  }
+
   public build(maze: Maze, history: Position[]): string {
     const currentPosition = history[history.length - 1];
-    const mazeString = maze.toString(currentPosition);
+    const mazeString = this.renderMaze(maze, currentPosition);
 
     return `
 You are a bot in a 2D maze. Your goal is to find the path from 'S' to 'E'.
-'S' is the start, 'E' is the end, '⬛️' are walls, and '⬜️' are walkable paths.
+'S' is the start, 'E' is the end, '#' are walls, and ' ' are walkable paths.
 'C' is your current position.
 
 Maze:
