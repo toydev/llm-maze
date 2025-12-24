@@ -64,12 +64,8 @@ export async function loadResults(): Promise<EvaluationResult[]> {
   const results: EvaluationResult[] = [];
 
   for (const file of yamlFiles) {
-    try {
-      const content = await fs.readFile(file, 'utf-8');
-      results.push(yaml.parse(content) as EvaluationResult);
-    } catch {
-      // skip invalid files
-    }
+    const content = await fs.readFile(file, 'utf-8');
+    results.push(yaml.parse(content) as EvaluationResult);
   }
   return results;
 }

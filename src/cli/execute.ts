@@ -102,7 +102,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   }
 
   clearInterval(progressInterval);
-  updateProgress(); // 最終状態を表示
+  updateProgress();
   process.stdout.write('\n');
 
   const correctMoves = positionResults.filter((r) => r.isCorrect).length;
