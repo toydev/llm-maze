@@ -1,5 +1,3 @@
-// src/summary.ts
-
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -11,7 +9,6 @@ import { Move, Position } from '@/maze/types';
 
 const logger = createLogger('summary');
 
-// execute.ts と共通の型定義
 type PositionResult = {
   position: Position;
   isCorrect: boolean;
@@ -32,7 +29,6 @@ type EvaluationResult = {
   results: PositionResult[];
 };
 
-// 集計用の型定義
 type AggregatedResult = {
   totalRuns: number;
   totalCorrectMoves: number;
@@ -45,14 +41,8 @@ type AggregatedResult = {
   mazeLayout: string[];
 };
 
-// Map<modelName, Map<strategyName, Map<mazeFile, AggregatedResult>>>
 type Summary = Map<string, Map<string, Map<string, AggregatedResult>>>;
 
-/**
- * outputディレクトリからすべてのYAMLファイルを再帰的に検索する
- * @param dir 検索を開始するディレクトリ
- * @returns YAMLファイルのパスの配列
- */
 async function findYamlFiles(dir: string): Promise<string[]> {
   let files: string[] = [];
   try {
@@ -73,10 +63,6 @@ async function findYamlFiles(dir: string): Promise<string[]> {
   return files;
 }
 
-/**
- * すべての評価結果を読み込んでパースする
- * @returns パースされた評価結果の配列
- */
 async function loadResults(): Promise<EvaluationResult[]> {
   const outputDir = './output';
   const yamlFiles = await findYamlFiles(outputDir);
@@ -98,11 +84,6 @@ async function loadResults(): Promise<EvaluationResult[]> {
   return results;
 }
 
-/**
- * 結果を集計する
- * @param results 評価結果の配列
- * @returns 集計されたサマリー
- */
 async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
   const summary: Summary = new Map();
 
@@ -148,7 +129,6 @@ async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
     }
   }
 
-  // 平均正解率と平均時間を計算
   for (const modelMap of summary.values()) {
     for (const strategyMap of modelMap.values()) {
       for (const agg of strategyMap.values()) {
@@ -161,10 +141,6 @@ async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
   return summary;
 }
 
-/**
- * 集計サマリーをテーブル形式で表示する
- * @param summary 集計サマリー
- */
 function formatTime(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   const sec = ms / 1000;
@@ -180,12 +156,10 @@ function printSummaryTable(summary: Summary): void {
   summary.forEach((modelMap) => modelMap.forEach((_, strategy) => allStrategies.add(strategy)));
   const strategies = Array.from(allStrategies).sort();
 
-  // ヘッダー
   let header = 'Model'.padEnd(25);
   strategies.forEach((stg) => (header += stg.padEnd(25)));
   console.log(header);
 
-  // データ行
   models.forEach((model) => {
     let row = model.padEnd(25);
     const modelMap = summary.get(model)!;
@@ -211,11 +185,6 @@ function printSummaryTable(summary: Summary): void {
   });
 }
 
-/**
- * マスごとの正解率をグリッドで表示する
- * @param summary 集計サマリー
- */
-// ANSIカラーコード
 const colors = {
   cyan: '\x1b[36m',
   green: '\x1b[32m',
@@ -244,9 +213,7 @@ function printGridPerformance(summary: Summary): void {
         const mazeName = path.basename(mazeFile, '.txt');
         console.log(`\n    ${mazeName}:`);
 
-        const grid: string[][] = agg.mazeLayout.map((row) =>
-          row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)),
-        );
+        const grid: string[][] = agg.mazeLayout.map((row) => row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)));
 
         for (let y = 0; y < grid.length; y++) {
           for (let x = 0; x < agg.mazeLayout[y].length; x++) {
@@ -279,23 +246,23 @@ function printGridPerformance(summary: Summary): void {
 const main = defineCommand({
   meta: {
     name: 'summary',
-    description: 'execute の結果を集計・表示する',
+    description: 'Aggregate and display evaluation results',
   },
   args: {
     model: {
       type: 'positional',
       default: 'all',
-      description: 'モデル名で絞り込み（デフォルト: all）',
+      description: 'Filter by model name (default: all)',
     },
     maze: {
       type: 'positional',
       default: 'all',
-      description: '迷路名で絞り込み（デフォルト: all）',
+      description: 'Filter by maze name (default: all)',
     },
     strategy: {
       type: 'positional',
       default: 'all',
-      description: '戦略名で絞り込み（デフォルト: all）',
+      description: 'Filter by strategy name (default: all)',
     },
   },
   async run({ args }) {
@@ -307,7 +274,6 @@ const main = defineCommand({
       return;
     }
 
-    // フィルタリング
     if (model.toLowerCase() !== 'all') {
       results = results.filter((r) => r.modelName.includes(model));
     }

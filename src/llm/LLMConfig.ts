@@ -22,8 +22,5 @@ export const llmConfig: LLMConfigData = {
       model: 'gemini-2.0-flash',
     },
   },
-  ollama: {
-    // 設定例（必要に応じてエイリアス定義可能）
-    // 'gemma3-12b': { model: 'gemma3:12b' },
-  },
+  ollama: {},
 } as const;

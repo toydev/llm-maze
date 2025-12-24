@@ -1,5 +1,3 @@
-// src/detail.ts
-
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -11,7 +9,6 @@ import { Move, Position } from '@/maze/types';
 
 const logger = createLogger('detail');
 
-// execute.ts と共通の型定義
 type PositionResult = {
   position: Position;
   isCorrect: boolean;
@@ -32,11 +29,6 @@ type EvaluationResult = {
   results: PositionResult[];
 };
 
-/**
- * outputディレクトリから最新のYAMLファイルを検索する
- * @param dir 検索を開始するディレクトリ
- * @returns YAMLファイルのパスの配列（更新日時降順）
- */
 async function findYamlFiles(dir: string): Promise<string[]> {
   let files: string[] = [];
   try {
@@ -57,7 +49,6 @@ async function findYamlFiles(dir: string): Promise<string[]> {
   return files;
 }
 
-// ANSIカラーコード
 const colors = {
   cyan: '\x1b[36m',
   green: '\x1b[32m',
@@ -71,9 +62,6 @@ function colorize(text: string, color: string): string {
   return `${color}${text}${colors.reset}`;
 }
 
-/**
- * 時間をフォーマットする
- */
 function formatTime(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   const sec = ms / 1000;
@@ -83,10 +71,6 @@ function formatTime(ms: number): string {
   return `${min}m${remainSec}s`;
 }
 
-
-/**
- * 複数の結果を集約する
- */
 function aggregateResults(results: EvaluationResult[]): {
   totalTrials: number;
   positionStats: Map<string, { times: number[]; correctCount: number; totalCount: number }>;
@@ -118,9 +102,6 @@ function aggregateResults(results: EvaluationResult[]): {
   return { totalTrials: results.length, positionStats, overallStats };
 }
 
-/**
- * 集約した統計を表示する
- */
 function printAggregatedStatistics(agg: ReturnType<typeof aggregateResults>): void {
   const { times, correctCount, totalCount } = agg.overallStats;
   if (times.length === 0) {
@@ -151,13 +132,7 @@ function printAggregatedStatistics(agg: ReturnType<typeof aggregateResults>): vo
   console.log(`Std Dev: ${formatTime(stdDev)}`);
 }
 
-/**
- * 集約したタイミンググリッドを表示する
- */
-async function printAggregatedTimingGrid(
-  mazeFile: string,
-  agg: ReturnType<typeof aggregateResults>,
-): Promise<void> {
+async function printAggregatedTimingGrid(mazeFile: string, agg: ReturnType<typeof aggregateResults>): Promise<void> {
   const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
 
   let minAvgTime = Infinity;
@@ -174,13 +149,11 @@ async function printAggregatedTimingGrid(
     }
   }
 
-  // 時間レベル(0-9)に応じた色を返す
   const getTimeLevelWithColor = (ms: number): string => {
     if (maxAvgTime === minAvgTime) return colorize('5', colors.yellow);
     const normalized = (ms - minAvgTime) / (maxAvgTime - minAvgTime);
     const level = Math.floor(normalized * 9);
     const char = level.toString();
-    // 0: 水色(最速), 1-2: 緑(速い), 3-5: 黄(普通), 6-9: 赤(遅い)
     if (level === 0) return colorize(char, colors.cyan);
     if (level <= 2) return colorize(char, colors.green);
     if (level <= 5) return colorize(char, colors.yellow);
@@ -189,11 +162,11 @@ async function printAggregatedTimingGrid(
 
   console.log(`\n--- Timing Grid (avg of ${agg.totalTrials} trials) ---`);
   console.log(`Min avg: ${formatTime(minAvgTime)}, Max avg: ${formatTime(maxAvgTime)}`);
-  console.log(`Legend: ${colorize('0', colors.cyan)}=fastest, ${colorize('1-2', colors.green)}=fast, ${colorize('3-5', colors.yellow)}=mid, ${colorize('6-9', colors.red)}=slow\n`);
-
-  const grid: string[][] = mazeLayout.map((row) =>
-    row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)),
+  console.log(
+    `Legend: ${colorize('0', colors.cyan)}=fastest, ${colorize('1-2', colors.green)}=fast, ${colorize('3-5', colors.yellow)}=mid, ${colorize('6-9', colors.red)}=slow\n`,
   );
+
+  const grid: string[][] = mazeLayout.map((row) => row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)));
 
   for (let y = 0; y < grid.length; y++) {
     for (let x = 0; x < mazeLayout[y].length; x++) {
@@ -206,21 +179,15 @@ async function printAggregatedTimingGrid(
   console.log(grid.map((row) => row.join('')).join('\n'));
 }
 
-/**
- * 集約した正解率グリッドを表示する
- */
-async function printAggregatedAccuracyGrid(
-  mazeFile: string,
-  agg: ReturnType<typeof aggregateResults>,
-): Promise<void> {
+async function printAggregatedAccuracyGrid(mazeFile: string, agg: ReturnType<typeof aggregateResults>): Promise<void> {
   const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
 
   console.log(`\n--- Accuracy Grid (${agg.totalTrials} trials) ---`);
-  console.log(`Legend: ${colorize('●', colors.cyan)}=100%, ${colorize('9', colors.green)}=90%+, ${colorize('7-8', colors.yellow)}=70%+, ${colorize('5-6', colors.yellow)}=50%+, ${colorize('0-4', colors.red)}=<50%\n`);
-
-  const grid: string[][] = mazeLayout.map((row) =>
-    row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)),
+  console.log(
+    `Legend: ${colorize('●', colors.cyan)}=100%, ${colorize('9', colors.green)}=90%+, ${colorize('7-8', colors.yellow)}=70%+, ${colorize('5-6', colors.yellow)}=50%+, ${colorize('0-4', colors.red)}=<50%\n`,
   );
+
+  const grid: string[][] = mazeLayout.map((row) => row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)));
 
   for (let y = 0; y < grid.length; y++) {
     for (let x = 0; x < mazeLayout[y].length; x++) {
@@ -245,9 +212,6 @@ async function printAggregatedAccuracyGrid(
   console.log(grid.map((row) => row.join('')).join('\n'));
 }
 
-/**
- * 位置ごとの詳細を表示する（処理時間順）
- */
 function printAggregatedPositionDetails(agg: ReturnType<typeof aggregateResults>): void {
   console.log(`\n--- Position Details (sorted by avg time) ---`);
   console.log(`${'Position'.padEnd(12)}${'Accuracy'.padEnd(12)}${'Avg Time'.padEnd(12)}${'Min'.padEnd(10)}${'Max'.padEnd(10)}${'StdDev'.padEnd(10)}`);
@@ -306,12 +270,7 @@ type JsonOutput = {
   }[];
 };
 
-function buildJsonOutput(
-  model: string,
-  maze: string,
-  strategy: string,
-  agg: ReturnType<typeof aggregateResults>,
-): JsonOutput {
+function buildJsonOutput(model: string, maze: string, strategy: string, agg: ReturnType<typeof aggregateResults>): JsonOutput {
   const { times, correctCount, totalCount } = agg.overallStats;
   times.sort((a, b) => a - b);
   const sum = times.reduce((a, b) => a + b, 0);
@@ -343,7 +302,6 @@ function buildJsonOutput(
       });
     }
   }
-  // 処理時間降順でソート
   positions.sort((a, b) => b.avgTimeMs - a.avgTimeMs);
 
   return {
@@ -366,28 +324,28 @@ function buildJsonOutput(
 const main = defineCommand({
   meta: {
     name: 'detail',
-    description: '指定条件の結果ファイルを集約して詳細を表示する',
+    description: 'Show detailed analysis for specified conditions',
   },
   args: {
     model: {
       type: 'positional',
       required: true,
-      description: 'モデル名',
+      description: 'Model name',
     },
     maze: {
       type: 'positional',
       required: true,
-      description: '迷路名',
+      description: 'Maze name',
     },
     strategy: {
       type: 'positional',
       required: true,
-      description: '戦略名',
+      description: 'Strategy name',
     },
     json: {
       type: 'boolean',
       default: false,
-      description: 'JSON形式で出力（エージェント向け）',
+      description: 'Output in JSON format',
     },
   },
   async run({ args }) {
@@ -404,7 +362,6 @@ const main = defineCommand({
       return;
     }
 
-    // 条件に一致するファイルを読み込む
     const matchingResults: EvaluationResult[] = [];
     let mazeFile = '';
 
@@ -413,11 +370,7 @@ const main = defineCommand({
         const content = await fs.readFile(file, 'utf-8');
         const result = yaml.parse(content) as EvaluationResult;
 
-        if (
-          result.modelName.includes(model) &&
-          result.mazeFile.includes(maze) &&
-          result.strategyName === strategy
-        ) {
+        if (result.modelName.includes(model) && result.mazeFile.includes(maze) && result.strategyName === strategy) {
           matchingResults.push(result);
           mazeFile = result.mazeFile;
         }

@@ -1,15 +1,3 @@
-/**
- * エージェント主体開発向けロガー
- *
- * 【機能】
- * - 自動ログローテーション（10MB超過で.1→.2→.3形式、最大10ファイル）
- * - エラーオブジェクト第2引数でスタックトレース記録
- * - 固定ファイル名（agent.log/application.log）
- *
- * 【ログレベル制御】
- * - サーバー側: 環境変数 LOG_LEVEL (debug/info/warn/error)
- * - ブラウザ側: localStorage.setItem('LOG_LEVEL', 'debug') で調整可能
- */
 import log from 'loglevel';
 
 const isBrowser = typeof window !== 'undefined';
@@ -46,7 +34,6 @@ function getLogFilename(logname: string): string {
 function createLogger(logname: string): log.Logger {
   const logger = log.getLogger(logname);
 
-  // カスタマイズ済みかチェック
   if ((logger as any).__customized) {
     return logger;
   }
@@ -75,12 +62,10 @@ function createLogger(logname: string): log.Logger {
           const timestamp = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().replace('T', ' ').split('.')[0];
           const source = loggerName ? ` [${String(loggerName)}]` : '';
 
-          // メッセージとエラーオブジェクトを統合
           let fullMessage = String(args[0] || '');
           for (let i = 1; i < args.length; i++) {
             const arg = args[i];
             if (arg instanceof Error) {
-              // エラーオブジェクトの場合はスタックトレースを含める
               fullMessage += ` ${arg.stack || arg.message || arg}`;
             } else if (arg !== undefined) {
               fullMessage += ` ${String(arg)}`;
@@ -99,24 +84,20 @@ function createLogger(logname: string): log.Logger {
           fs.appendFileSync(filepath, logLine);
           fileSizeCounters.set(filepath, (fileSizeCounters.get(filepath) || 0) + logLineSize);
         } catch {
-          // ファイル出力エラーは無視（コンソールには出力済み）
+          // ignore file write errors
         }
       };
     };
   }
 
-  // カスタマイズ済みフラグを設定
   (logger as any).__customized = true;
 
-  // methodFactory設定後に一度だけsetLevel（カスタムファクトリーが適用される）
   let logLevel = 'info';
   if (isBrowser) {
-    // ブラウザ側: localStorage から取得
     if (typeof localStorage !== 'undefined') {
       logLevel = localStorage.getItem('LOG_LEVEL') || 'info';
     }
   } else {
-    // サーバー側: 環境変数から取得
     logLevel = process.env.LOG_LEVEL || 'info';
   }
   logger.setLevel(logLevel as log.LogLevelDesc);

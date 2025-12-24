@@ -1,29 +1,10 @@
 import { Maze } from '@/maze/Maze';
 import { Position, Move } from '@/maze/types';
 
-/**
- * ゴールからの距離を格納するマップの型
- * key: "x,y", value: 距離
- */
 type DistanceMap = Map<string, number>;
-
-/**
- * スタートから各位置への最短経路を格納するマップの型
- * key: "x,y", value: スタートからその位置への経路（Position配列）
- */
 export type PathMap = Map<string, Position[]>;
-
-/**
- * 各マスからの最適な次の一手を格納するマップの型
- * key: "x,y", value: ['up', 'down', 'left', 'right'] の配列
- */
 export type OptimalMoveMap = Map<string, Move[]>;
 
-/**
- * 幅優先探索(BFS)を用いて、ゴールから全ての到達可能なマスへの最短距離を計算します。
- * @param maze 迷路オブジェクト
- * @returns ゴールからの距離をマッピングしたDistanceMap
- */
 function calculateDistancesFromEnd(maze: Maze): DistanceMap {
   const distances: DistanceMap = new Map();
   const queue: Position[] = [maze.endPosition];
@@ -55,12 +36,6 @@ function calculateDistancesFromEnd(maze: Maze): DistanceMap {
   return distances;
 }
 
-/**
- * 迷路の各マスからゴールに向かうための許容される次の一手のマップを生成します。
- * 「許容される」= 移動先の距離 ≦ 移動元の距離（遠ざからない移動）
- * @param maze 迷路オブジェクト
- * @returns 各マスの許容される移動をマッピングしたOptimalMoveMap
- */
 export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
   const distances = calculateDistancesFromEnd(maze);
   const optimalMoves: OptimalMoveMap = new Map();
@@ -98,13 +73,6 @@ export function createOptimalMoveMap(maze: Maze): OptimalMoveMap {
   return optimalMoves;
 }
 
-/**
- * BFSを用いて、スタートから全ての到達可能なマスへの最短経路を計算します。
- * ジグザグ化: 各位置でゴールへの残り距離に基づいて探索順序を決定し、
- * 一方向への偏りを軽減します。
- * @param maze 迷路オブジェクト
- * @returns 各位置への最短経路をマッピングしたPathMap
- */
 export function createPathMapFromStart(maze: Maze): PathMap {
   const pathMap: PathMap = new Map();
   const parentMap = new Map<string, Position | null>();
@@ -117,11 +85,10 @@ export function createPathMapFromStart(maze: Maze): PathMap {
   while (queue.length > 0) {
     const current = queue.shift()!;
 
-    // ゴールへの残り距離を計算
     const dx = Math.abs(end.x - current.x);
     const dy = Math.abs(end.y - current.y);
 
-    // dy >= dx なら縦移動優先、そうでなければ横移動優先（ジグザグ化）
+    // Zigzag: vertical-first when dy >= dx, horizontal-first otherwise
     const neighbors: Position[] =
       dy >= dx
         ? [
@@ -146,7 +113,6 @@ export function createPathMapFromStart(maze: Maze): PathMap {
     }
   }
 
-  // 各位置への経路を再構築
   for (const [posKey] of parentMap) {
     const path: Position[] = [];
     const [x, y] = posKey.split(',').map(Number);
@@ -164,27 +130,18 @@ export function createPathMapFromStart(maze: Maze): PathMap {
   return pathMap;
 }
 
-// A*探索用のノード
 interface Node {
   position: Position;
   parent: Node | null;
-  g: number; // スタートからのコスト
-  h: number; // ゴールまでの推定コスト
-  f: number; // g + h
+  g: number;
+  h: number;
+  f: number;
 }
 
-/**
- * マンハッタン距離を計算するヒューリスティック関数
- */
 function heuristic(a: Position, b: Position): number {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
-/**
- * A* (A-Star) 探索アルゴリズムを使用して迷路の最短経路を見つけます。
- * @param maze - 迷路オブジェクト
- * @returns 最短経路の座標リスト。経路が見つからない場合はnull。
- */
 export function solveWithAStar(maze: Maze): Position[] | null {
   const startNode: Node = {
     position: maze.startPosition,
@@ -198,7 +155,6 @@ export function solveWithAStar(maze: Maze): Position[] | null {
   const closedList: Set<string> = new Set();
 
   while (openList.length > 0) {
-    // openListからfコストが最小のノードを探す
     let lowestIndex = 0;
     for (let i = 1; i < openList.length; i++) {
       if (openList[i].f < openList[lowestIndex].f) {
@@ -206,14 +162,10 @@ export function solveWithAStar(maze: Maze): Position[] | null {
       }
     }
     const currentNode = openList.splice(lowestIndex, 1)[0];
-
-    // closedListに追加
     const posKey = `${currentNode.position.x},${currentNode.position.y}`;
     closedList.add(posKey);
 
-    // ゴールに到達したかチェック
     if (currentNode.position.x === maze.endPosition.x && currentNode.position.y === maze.endPosition.y) {
-      // 経路を再構築して返す
       const path: Position[] = [];
       let temp: Node | null = currentNode;
       while (temp !== null) {
@@ -223,7 +175,6 @@ export function solveWithAStar(maze: Maze): Position[] | null {
       return path;
     }
 
-    // 隣接ノードを取得
     const neighbors: Position[] = [
       { x: currentNode.position.x, y: currentNode.position.y - 1 }, // up
       { x: currentNode.position.x, y: currentNode.position.y + 1 }, // down
@@ -233,23 +184,18 @@ export function solveWithAStar(maze: Maze): Position[] | null {
 
     for (const nextPos of neighbors) {
       const nextPosKey = `${nextPos.x},${nextPos.y}`;
-
-      // 移動可能か、またはclosedListに含まれていないか
       if (!maze.isTraversable(nextPos) || closedList.has(nextPosKey)) {
         continue;
       }
 
-      const gScore = currentNode.g + 1; // 移動コストは1
+      const gScore = currentNode.g + 1;
       const hScore = heuristic(nextPos, maze.endPosition);
       const fScore = gScore + hScore;
-
-      // openListに既に存在し、より良い経路でない場合はスキップ
       const existingNode = openList.find((node) => node.position.x === nextPos.x && node.position.y === nextPos.y);
       if (existingNode && gScore >= existingNode.g) {
         continue;
       }
 
-      // 新しいノードまたはより良い経路
       const neighborNode: Node = {
         position: nextPos,
         parent: currentNode,
@@ -261,7 +207,6 @@ export function solveWithAStar(maze: Maze): Position[] | null {
       if (!existingNode) {
         openList.push(neighborNode);
       } else {
-        // 既存のノードを更新
         existingNode.parent = currentNode;
         existingNode.g = gScore;
         existingNode.f = fScore;
@@ -269,6 +214,5 @@ export function solveWithAStar(maze: Maze): Position[] | null {
     }
   }
 
-  // 経路が見つからなかった場合
   return null;
 }

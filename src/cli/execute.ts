@@ -9,19 +9,11 @@ import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 import { createOptimalMoveMap, createPathMapFromStart } from '@/maze/solver';
 import { Move, Position } from '@/maze/types';
-import {
-  PromptStrategy,
-  SimplePromptStrategy,
-  GraphPromptStrategy,
-  MatrixEmbedPromptStrategy,
-  MatrixSepPromptStrategy,
-  ListPromptStrategy,
-} from '@/prompt';
+import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/schema';
 
 const logger = createLogger('execute');
 
-// 結果を保存するための型定義
 type PositionResult = {
   position: Position;
   isCorrect: boolean;
@@ -42,14 +34,6 @@ type EvaluationResult = {
   results: PositionResult[];
 };
 
-/**
- * LLMの判断と模範解答を比較し、評価結果を返す関数
- * @param mazeFile 評価対象の迷路ファイルパス
- * @param strategyName 戦略名
- * @param strategy 使用するプロンプト戦略
- * @param modelName 使用するLLMのモデル名
- * @returns 評価結果オブジェクト
- */
 async function executeStrategy(mazeFile: string, strategyName: string, strategy: PromptStrategy, modelName: string): Promise<EvaluationResult> {
   logger.info(`Executing for maze: ${mazeFile}, strategy: ${strategyName}, model: ${modelName}`);
 
@@ -68,7 +52,6 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   const positionResults: PositionResult[] = [];
   const totalCount = evaluationPositions.length;
 
-  // 時間フォーマット用ヘルパー (mm:ss)
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -76,7 +59,6 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // 進捗表示の初期化
   const progressChars: string[] = [];
   const startTime = Date.now();
 
@@ -95,11 +77,10 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
     }
 
     process.stdout.write(
-      `\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} .:${correctCount} X:${incorrectCount} | ${formatTime(elapsed)} 残: ${etaStr}`,
+      `\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} .:${correctCount} X:${incorrectCount} | ${formatTime(elapsed)} ETA: ${etaStr}`,
     );
   };
 
-  // 1秒ごとに更新
   const progressInterval = setInterval(updateProgress, 1000);
   updateProgress();
 
@@ -131,7 +112,6 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
     } catch (error) {
       const posTimeMs = Date.now() - posStartTime;
       logger.error(`[${posKey}] Error during LLM invocation:`, error);
-      // エラーが発生した場合は不正解として記録
       positionResults.push({
         position: currentPos,
         isCorrect: false,
@@ -145,7 +125,6 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
     }
   }
 
-  // 進捗表示の終了
   clearInterval(progressInterval);
   updateProgress(); // 最終状態を表示
   process.stdout.write('\n');
@@ -169,10 +148,6 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
   };
 }
 
-/**
- * 評価結果をYAMLファイルに保存する関数
- * @param result 評価結果
- */
 async function saveResult(result: EvaluationResult): Promise<void> {
   const timestamp = new Date().toISOString().replace(/:/g, '-');
   const modelId = result.modelName.replace(/[:/]/g, '_'); // ollama:gemma3:latest -> ollama_gemma3_latest
@@ -198,40 +173,39 @@ const strategiesMap = new Map<string, PromptStrategy>([
 const main = defineCommand({
   meta: {
     name: 'execute',
-    description: 'LLMの迷路解決能力を評価する',
+    description: 'Evaluate LLM maze-solving ability',
   },
   args: {
     model: {
       type: 'positional',
       required: true,
-      description: 'LLMモデル名 (例: gemini:gemini-2.5-flash, ollama:gemma3:latest)',
+      description: 'LLM model name (e.g., gemini:gemini-2.5-flash, ollama:gemma3:latest)',
     },
     maze: {
       type: 'positional',
       default: 'all',
-      description: '迷路ファイルパス、または "all" で全迷路 (デフォルト: all)',
+      description: 'Maze file path or "all" (default: all)',
     },
     strategy: {
       type: 'positional',
       default: 'all',
-      description: `戦略名、または "all" で全戦略 (デフォルト: all)\n利用可能: ${Array.from(strategiesMap.keys()).join(', ')}`,
+      description: `Strategy name or "all" (default: all). Available: ${Array.from(strategiesMap.keys()).join(', ')}`,
     },
     times: {
       type: 'string',
       default: '1',
-      description: '各組み合わせの実行回数 (デフォルト: 1)',
+      description: 'Number of runs per combination (default: 1)',
     },
     'no-warmup': {
       type: 'boolean',
       default: false,
-      description: 'ウォームアップをスキップする（外部APIサービス向け）',
+      description: 'Skip warmup (for external API services)',
     },
   },
   async run({ args }) {
     const { model, maze: mazePathArg, strategy: strategyArg, times: timesStr, 'no-warmup': noWarmup } = args;
     const times = parseInt(timesStr, 10);
 
-    // ウォームアップ（モデルロードのオーバーヘッドを事前に処理）
     if (!noWarmup) {
       process.stdout.write('Warming up LLM...');
       const llm = LLM.get(model);
@@ -246,7 +220,6 @@ const main = defineCommand({
       }
     }
 
-    // 迷路ファイルの決定
     let mazeFiles: string[] = [];
     if (mazePathArg.toLowerCase() === 'all') {
       const mazeDir = './mazes';
@@ -259,7 +232,6 @@ const main = defineCommand({
       return;
     }
 
-    // 戦略の決定
     let strategiesToExecute: [string, PromptStrategy][] = [];
     if (strategyArg.toLowerCase() === 'all') {
       strategiesToExecute = Array.from(strategiesMap.entries());
@@ -278,7 +250,6 @@ const main = defineCommand({
     logger.info(`Strategies: ${strategiesToExecute.map(([name]) => name).join(', ')}`);
     logger.info(`Times to run for each combination: ${times}`);
 
-    // 実行ループ（times を外側にしてまんべんなく実行）
     for (let i = 0; i < times; i++) {
       for (const mazeFile of mazeFiles) {
         for (const [strategyName, strategy] of strategiesToExecute) {

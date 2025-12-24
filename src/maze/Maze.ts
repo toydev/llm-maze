@@ -1,5 +1,3 @@
-// src/maze/Maze.ts
-
 import { Position, CellType } from '@/maze/types';
 
 export class Maze {
@@ -57,11 +55,6 @@ export class Maze {
     this.endPosition = end;
   }
 
-  /**
-   * 迷路を文字列として表示します。
-   * @param currentPosition - (オプション) 現在位置をハイライト表示します。
-   * @returns 迷路の文字列表現
-   */
   public toString(currentPosition?: Position): string {
     return this.grid
       .map((row, y) =>
@@ -77,11 +70,6 @@ export class Maze {
       .join('\n');
   }
 
-  /**
-   * 指定された位置のセルの種類を取得します。
-   * @param position - 位置
-   * @returns セルの種類、範囲外の場合はundefined
-   */
   public getCellType(position: Position): CellType | undefined {
     if (position.y < 0 || position.y >= this.height || position.x < 0 || position.x >= this.width) {
       return undefined;
@@ -89,11 +77,6 @@ export class Maze {
     return this.grid[position.y][position.x];
   }
 
-  /**
-   * 指定された位置が移動可能かどうかを判定します。
-   * @param position - 位置
-   * @returns 移動可能であればtrue
-   */
   public isTraversable(position: Position): boolean {
     const cellType = this.getCellType(position);
     return cellType !== undefined && cellType !== CellType.Wall;
