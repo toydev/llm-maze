@@ -6,6 +6,8 @@ import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 
+import { formatDuration, renderAccuracyGrid } from './view';
+
 const logger = createLogger('summary');
 
 type AggregatedResult = {
@@ -15,8 +17,8 @@ type AggregatedResult = {
   averageAccuracy: number;
   totalTimeMs: number;
   averageTimePerPositionMs: number;
-  positionalCorrectCounts: Map<string, number>; // key: "x,y"
-  positionalTotalCounts: Map<string, number>; // key: "x,y"
+  positionalCorrectCounts: Map<string, number>;
+  positionalTotalCounts: Map<string, number>;
   mazeLayout: string[];
 };
 
@@ -79,15 +81,6 @@ async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
   return summary;
 }
 
-function formatTime(ms: number): string {
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  const sec = ms / 1000;
-  if (sec < 60) return `${sec.toFixed(1)}s`;
-  const min = Math.floor(sec / 60);
-  const remainSec = Math.round(sec % 60);
-  return `${min}m${remainSec}s`;
-}
-
 function printSummaryTable(summary: Summary): void {
   const models = Array.from(summary.keys()).sort();
   const allStrategies = new Set<string>();
@@ -114,7 +107,7 @@ function printSummaryTable(summary: Summary): void {
         });
         const overallAccuracy = totalPositions > 0 ? (totalCorrect / totalPositions) * 100 : 0;
         const avgTimePerPos = totalPositions > 0 ? totalTimeMs / totalPositions : 0;
-        row += `${overallAccuracy.toFixed(1)}% (${formatTime(avgTimePerPos)}/pos)`.padEnd(25);
+        row += `${overallAccuracy.toFixed(1)}% (${formatDuration(avgTimePerPos)}/pos)`.padEnd(25);
       } else {
         row += 'N/A'.padEnd(25);
       }
@@ -123,17 +116,13 @@ function printSummaryTable(summary: Summary): void {
   });
 }
 
-const colors = {
-  cyan: '\x1b[36m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-  gray: '\x1b[90m',
-  reset: '\x1b[0m',
-};
-
-function colorize(text: string, color: string): string {
-  return `${color}${text}${colors.reset}`;
+function toAccuracyData(agg: AggregatedResult): Map<string, { correct: number; total: number }> {
+  const data = new Map<string, { correct: number; total: number }>();
+  for (const [key, total] of agg.positionalTotalCounts) {
+    const correct = agg.positionalCorrectCounts.get(key) ?? 0;
+    data.set(key, { correct, total });
+  }
+  return data;
 }
 
 function printGridPerformance(summary: Summary): void {
@@ -150,32 +139,7 @@ function printGridPerformance(summary: Summary): void {
         const agg = strategyMap.get(mazeFile)!;
         const mazeName = path.basename(mazeFile, '.txt');
         console.log(`\n    ${mazeName}:`);
-
-        const grid: string[][] = agg.mazeLayout.map((row) => row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)));
-
-        for (let y = 0; y < grid.length; y++) {
-          for (let x = 0; x < agg.mazeLayout[y].length; x++) {
-            const key = `${x},${y}`;
-            if (agg.positionalTotalCounts.has(key)) {
-              const total = agg.positionalTotalCounts.get(key)!;
-              const correct = agg.positionalCorrectCounts.get(key) ?? 0;
-              const rate = correct / total;
-
-              if (rate === 1) {
-                grid[y][x] = colorize('●', colors.cyan);
-              } else if (rate >= 0.9) {
-                grid[y][x] = colorize('9', colors.green);
-              } else if (rate >= 0.7) {
-                grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.yellow);
-              } else if (rate >= 0.5) {
-                grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.yellow);
-              } else {
-                grid[y][x] = colorize(Math.floor(rate * 10).toString(), colors.red);
-              }
-            }
-          }
-        }
-        console.log(grid.map((row) => '    ' + row.join('')).join('\n'));
+        renderAccuracyGrid(agg.mazeLayout, toAccuracyData(agg), '    ');
       });
     });
   });

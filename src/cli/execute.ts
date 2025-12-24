@@ -12,6 +12,8 @@ import { Position } from '@/maze/types';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/schema';
 
+import { createProgressReporter } from './view';
+
 const logger = createLogger('execute');
 
 async function executeStrategy(mazeFile: string, strategyName: string, strategy: PromptStrategy, modelName: string): Promise<EvaluationResult> {
@@ -26,39 +28,9 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
 
   const evaluationPositions = Array.from(validMoveMap.keys());
   const positionResults: PositionResult[] = [];
-  const totalCount = evaluationPositions.length;
 
-  const formatTime = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const progressChars: string[] = [];
+  const progress = createProgressReporter(evaluationPositions.length);
   const startTime = Date.now();
-
-  const updateProgress = () => {
-    const remaining = ' '.repeat(totalCount - progressChars.length);
-    const elapsed = Date.now() - startTime;
-    const completed = progressChars.length;
-    const correctCount = progressChars.filter((c) => c === '.').length;
-    const incorrectCount = progressChars.filter((c) => c === 'X').length;
-
-    let etaStr = '--:--';
-    if (completed > 0) {
-      const avgTime = elapsed / completed;
-      const remainingTime = avgTime * (totalCount - completed);
-      etaStr = formatTime(remainingTime);
-    }
-
-    process.stdout.write(
-      `\r[${progressChars.join('')}${remaining}] ${completed}/${totalCount} .:${correctCount} X:${incorrectCount} | ${formatTime(elapsed)} ETA: ${etaStr}`,
-    );
-  };
-
-  const progressInterval = setInterval(updateProgress, 1000);
-  updateProgress();
 
   for (const posKey of evaluationPositions) {
     const [x, y] = posKey.split(',').map(Number);
@@ -73,43 +45,36 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
       const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
       const llmMove = llmResponse.move;
       const isCorrect = correctMoveSet.has(llmMove);
-      const posTimeMs = Date.now() - posStartTime;
 
       positionResults.push({
         position: currentPos,
         isCorrect,
         llmMove,
         validMoves: Array.from(correctMoveSet),
-        timeMs: posTimeMs,
+        timeMs: Date.now() - posStartTime,
       });
 
-      progressChars.push(isCorrect ? '.' : 'X');
-      updateProgress();
+      progress.record(isCorrect);
     } catch (error) {
-      const posTimeMs = Date.now() - posStartTime;
       logger.error(`[${posKey}] Error during LLM invocation:`, error);
       positionResults.push({
         position: currentPos,
         isCorrect: false,
         llmMove: 'error',
         validMoves: Array.from(correctMoveSet),
-        timeMs: posTimeMs,
+        timeMs: Date.now() - posStartTime,
       });
 
-      progressChars.push('X');
-      updateProgress();
+      progress.record(false);
     }
   }
 
-  clearInterval(progressInterval);
-  updateProgress();
-  process.stdout.write('\n');
+  progress.finish();
 
   const correctMoves = positionResults.filter((r) => r.isCorrect).length;
   const totalPositions = evaluationPositions.length;
   const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
   const totalTimeMs = Date.now() - startTime;
-  const averageTimePerPositionMs = totalPositions > 0 ? totalTimeMs / totalPositions : 0;
 
   return {
     mazeFile: mazeFile.replace(/\\/g, '/'),
@@ -119,7 +84,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
     correctMoves,
     accuracy,
     totalTimeMs,
-    averageTimePerPositionMs,
+    averageTimePerPositionMs: totalPositions > 0 ? totalTimeMs / totalPositions : 0,
     results: positionResults,
   };
 }
