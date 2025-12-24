@@ -3,7 +3,7 @@ import { CellType, Position } from '@/maze/types';
 import { PromptStrategy } from '@/prompt/PromptStrategy';
 import { COORDINATE_SYSTEM_NOTE, MATRIX_INDEXING_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/promptTemplate';
 
-export class MatrixSepPromptStrategy implements PromptStrategy {
+export class MatrixPromptStrategy implements PromptStrategy {
   private generateMatrix(maze: Maze): number[][] {
     const matrix: number[][] = [];
 
