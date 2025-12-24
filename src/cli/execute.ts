@@ -10,7 +10,7 @@ import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
 import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/maze/solver';
 import { Position } from '@/maze/types';
-import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
+import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/schema';
 
 const logger = createLogger('execute');
@@ -91,7 +91,6 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
 const strategiesMap = new Map<string, PromptStrategy>([
   ['simple', new SimplePromptStrategy()],
   ['graph', new GraphPromptStrategy()],
-  ['matrix-embed', new MatrixEmbedPromptStrategy()],
   ['matrix-sep', new MatrixSepPromptStrategy()],
   ['list', new ListPromptStrategy()],
 ]);
