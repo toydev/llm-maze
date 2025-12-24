@@ -1,8 +1,6 @@
 import { Maze } from '@/maze/Maze';
 import { Position, Move } from '@/maze/types';
 
-// ... (既存の solveWithAStar 関数はそのまま) ...
-
 /**
  * ゴールからの距離を格納するマップの型
  * key: "x,y", value: 距離
