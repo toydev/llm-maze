@@ -8,7 +8,7 @@ import { createProgressReporter } from '@/cli/view';
 import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
-import { createGoalwardMoveMap, createPathMapFromStart } from '@/maze/solver';
+import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/maze/solver';
 import { Position } from '@/maze/types';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixEmbedPromptStrategy, MatrixSepPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/schema';
@@ -20,7 +20,7 @@ async function executeStrategy(mazeFile: string, strategyName: string, strategy:
 
   const maze = await Maze.fromFile(mazeFile);
   const goalwardMoveMap = createGoalwardMoveMap(maze);
-  const pathMap = createPathMapFromStart(maze);
+  const pathMap = createUnbiasedPathMap(maze);
 
   const llm = new ChatOllama({ model: modelName });
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);

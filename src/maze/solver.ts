@@ -73,7 +73,7 @@ export function createGoalwardMoveMap(maze: Maze): GoalwardMoveMap {
   return goalwardMoves;
 }
 
-export function createPathMapFromStart(maze: Maze): PathMap {
+export function createUnbiasedPathMap(maze: Maze): PathMap {
   const pathMap: PathMap = new Map();
   const parentMap = new Map<string, Position | null>();
   const queue: Position[] = [maze.startPosition];
@@ -88,7 +88,7 @@ export function createPathMapFromStart(maze: Maze): PathMap {
     const dx = Math.abs(end.x - current.x);
     const dy = Math.abs(end.y - current.y);
 
-    // Zigzag: vertical-first when dy >= dx, horizontal-first otherwise
+    // Prioritize the axis with greater distance to goal to reduce directional bias
     const neighbors: Position[] =
       dy >= dx
         ? [
