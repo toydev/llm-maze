@@ -1,13 +1,23 @@
+import fs from 'fs/promises';
+
 import { Position, CellType } from '@/maze/types';
 
 export class Maze {
   private readonly grid: CellType[][];
+  public readonly layout: string[];
   public readonly startPosition: Position;
   public readonly endPosition: Position;
   public readonly height: number;
   public readonly width: number;
 
+  static async fromFile(filePath: string): Promise<Maze> {
+    const content = await fs.readFile(filePath, 'utf-8');
+    const layout = content.split('\n').filter((line) => line.length > 0);
+    return new Maze(layout);
+  }
+
   constructor(layout: string[]) {
+    this.layout = layout;
     if (layout.length === 0) {
       throw new Error('Maze layout cannot be empty.');
     }

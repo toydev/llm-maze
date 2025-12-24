@@ -1,10 +1,10 @@
-import fs from 'fs/promises';
 import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
 
 import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
+import { Maze } from '@/maze/Maze';
 
 const logger = createLogger('summary');
 
@@ -38,7 +38,7 @@ async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
 
     const mazeFilePath = res.mazeFile.replace(/\\/g, '/');
     if (!strategySummary.has(mazeFilePath)) {
-      const mazeLayout = (await fs.readFile(mazeFilePath, 'utf-8')).split('\n').filter((line) => line.length > 0);
+      const maze = await Maze.fromFile(mazeFilePath);
       strategySummary.set(mazeFilePath, {
         totalRuns: 0,
         totalCorrectMoves: 0,
@@ -48,7 +48,7 @@ async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
         averageTimePerPositionMs: 0,
         positionalCorrectCounts: new Map(),
         positionalTotalCounts: new Map(),
-        mazeLayout,
+        mazeLayout: maze.layout,
       });
     }
     const agg = strategySummary.get(mazeFilePath)!;

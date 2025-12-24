@@ -3,6 +3,7 @@
 # application
 /log/
 /output/
+REVIEW_*
 
 # dependencies
 /node_modules

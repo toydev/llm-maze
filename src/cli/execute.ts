@@ -17,8 +17,7 @@ const logger = createLogger('execute');
 async function executeStrategy(mazeFile: string, strategyName: string, strategy: PromptStrategy, modelName: string): Promise<EvaluationResult> {
   logger.info(`Executing for maze: ${mazeFile}, strategy: ${strategyName}, model: ${modelName}`);
 
-  const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
-  const maze = new Maze(mazeLayout);
+  const maze = await Maze.fromFile(mazeFile);
   const validMoveMap = createValidMoveMap(maze);
   const pathMap = createPathMapFromStart(maze);
 

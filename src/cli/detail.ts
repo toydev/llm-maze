@@ -1,9 +1,8 @@
-import fs from 'fs/promises';
-
 import { defineCommand, runMain } from 'citty';
 
 import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
+import { Maze } from '@/maze/Maze';
 
 const logger = createLogger('detail');
 
@@ -91,7 +90,8 @@ function printAggregatedStatistics(agg: ReturnType<typeof aggregateResults>): vo
 }
 
 async function printAggregatedTimingGrid(mazeFile: string, agg: ReturnType<typeof aggregateResults>): Promise<void> {
-  const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
+  const maze = await Maze.fromFile(mazeFile);
+  const mazeLayout = maze.layout;
 
   let minAvgTime = Infinity;
   let maxAvgTime = 0;
@@ -138,7 +138,8 @@ async function printAggregatedTimingGrid(mazeFile: string, agg: ReturnType<typeo
 }
 
 async function printAggregatedAccuracyGrid(mazeFile: string, agg: ReturnType<typeof aggregateResults>): Promise<void> {
-  const mazeLayout = (await fs.readFile(mazeFile, 'utf-8')).split('\n').filter((line) => line.length > 0);
+  const maze = await Maze.fromFile(mazeFile);
+  const mazeLayout = maze.layout;
 
   console.log(`\n--- Accuracy Grid (${agg.totalTrials} trials) ---`);
   console.log(
