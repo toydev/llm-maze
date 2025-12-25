@@ -3,6 +3,10 @@ import path from 'path';
 
 import log from 'loglevel';
 
+interface CustomLogger extends log.Logger {
+  __customized?: boolean;
+}
+
 const isTest = process.env.VITEST === 'true';
 
 const LOG_BASE_DIR = path.join(process.cwd(), 'log');
@@ -48,9 +52,9 @@ function rotateLogFile(): void {
 
 function createLogger(logname: string): log.Logger {
   ensureInitialized();
-  const logger = log.getLogger(logname);
+  const logger = log.getLogger(logname) as CustomLogger;
 
-  if ((logger as any).__customized) {
+  if (logger.__customized) {
     return logger;
   }
 
@@ -86,7 +90,7 @@ function createLogger(logname: string): log.Logger {
     };
   };
 
-  (logger as any).__customized = true;
+  logger.__customized = true;
   logger.setLevel((process.env.LOG_LEVEL || 'info') as log.LogLevelDesc);
 
   return logger;
