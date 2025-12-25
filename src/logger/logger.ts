@@ -4,7 +4,7 @@ import path from 'path';
 import log from 'loglevel';
 
 interface CustomLogger extends log.Logger {
-  __customized?: boolean;
+  customized?: boolean;
 }
 
 const isTest = process.env.VITEST === 'true';
@@ -27,7 +27,7 @@ function createLogger(logname: string): log.Logger {
   ensureInitialized();
   const logger = log.getLogger(logname) as CustomLogger;
 
-  if (logger.__customized) {
+  if (logger.customized) {
     return logger;
   }
 
@@ -56,7 +56,7 @@ function createLogger(logname: string): log.Logger {
     };
   };
 
-  logger.__customized = true;
+  logger.customized = true;
   logger.setLevel((process.env.LOG_LEVEL || 'info') as log.LogLevelDesc);
 
   return logger;
