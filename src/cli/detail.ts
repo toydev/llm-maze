@@ -13,6 +13,22 @@ type AggregatedStats = {
   overallStats: { times: number[]; correctCount: number; totalCount: number };
 };
 
+type Stats = { avg: number; median: number; min: number; max: number; stdDev: number };
+
+function calculateStats(times: number[]): Stats {
+  if (times.length === 0) {
+    return { avg: 0, median: 0, min: 0, max: 0, stdDev: 0 };
+  }
+  const sorted = [...times].sort((a, b) => a - b);
+  const avg = sorted.reduce((a, b) => a + b, 0) / sorted.length;
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const min = sorted[0];
+  const max = sorted[sorted.length - 1];
+  const variance = sorted.reduce((acc, t) => acc + Math.pow(t - avg, 2), 0) / sorted.length;
+  const stdDev = Math.sqrt(variance);
+  return { avg, median, min, max, stdDev };
+}
+
 function aggregateResults(results: EvaluationResult[]): AggregatedStats {
   const positionStats = new Map<string, { times: number[]; correctCount: number; totalCount: number }>();
   const overallStats = { times: [] as number[], correctCount: 0, totalCount: 0 };
@@ -47,16 +63,8 @@ function printStatistics(agg: AggregatedStats): void {
     return;
   }
 
-  times.sort((a, b) => a - b);
+  const { avg, median, min, max, stdDev } = calculateStats(times);
   const sum = times.reduce((a, b) => a + b, 0);
-  const avg = sum / times.length;
-  const median = times[Math.floor(times.length / 2)];
-  const min = times[0];
-  const max = times[times.length - 1];
-
-  const variance = times.reduce((acc, t) => acc + Math.pow(t - avg, 2), 0) / times.length;
-  const stdDev = Math.sqrt(variance);
-
   const accuracy = (correctCount / totalCount) * 100;
 
   console.log(`\n--- Statistics (${agg.totalTrials} trials) ---`);
@@ -109,14 +117,9 @@ function printPositionDetails(agg: AggregatedStats): void {
 
   for (const [key, stats] of agg.positionStats) {
     if (stats.times.length > 0) {
-      const times = stats.times;
-      const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
-      const min = Math.min(...times);
-      const max = Math.max(...times);
-      const variance = times.reduce((acc, t) => acc + Math.pow(t - avgTime, 2), 0) / times.length;
-      const stdDev = Math.sqrt(variance);
+      const { avg, min, max, stdDev } = calculateStats(stats.times);
       const accuracy = stats.correctCount / stats.totalCount;
-      entries.push({ key, avgTime, accuracy, min, max, stdDev });
+      entries.push({ key, avgTime: avg, accuracy, min, max, stdDev });
     }
   }
 
@@ -160,33 +163,21 @@ type JsonOutput = {
 
 function buildJsonOutput(model: string, maze: string, strategy: string, agg: AggregatedStats): JsonOutput {
   const { times, correctCount, totalCount } = agg.overallStats;
-  times.sort((a, b) => a - b);
-  const sum = times.reduce((a, b) => a + b, 0);
-  const avg = sum / times.length;
-  const median = times[Math.floor(times.length / 2)] || 0;
-  const min = times[0] || 0;
-  const max = times[times.length - 1] || 0;
-  const variance = times.reduce((acc, t) => acc + Math.pow(t - avg, 2), 0) / times.length;
-  const stdDev = Math.sqrt(variance);
+  const { avg, median, min, max, stdDev } = calculateStats(times);
 
   const positions: JsonOutput['positions'] = [];
   for (const [key, stats] of agg.positionStats) {
     if (stats.times.length > 0) {
       const [x, y] = key.split(',').map(Number);
-      const posTimes = stats.times;
-      const posAvg = posTimes.reduce((a, b) => a + b, 0) / posTimes.length;
-      const posMin = Math.min(...posTimes);
-      const posMax = Math.max(...posTimes);
-      const posVariance = posTimes.reduce((acc, t) => acc + Math.pow(t - posAvg, 2), 0) / posTimes.length;
-      const posStdDev = Math.sqrt(posVariance);
+      const posStats = calculateStats(stats.times);
       positions.push({
         x,
         y,
         accuracy: stats.correctCount / stats.totalCount,
-        avgTimeMs: Math.round(posAvg),
-        minTimeMs: posMin,
-        maxTimeMs: posMax,
-        stdDevMs: Math.round(posStdDev),
+        avgTimeMs: Math.round(posStats.avg),
+        minTimeMs: posStats.min,
+        maxTimeMs: posStats.max,
+        stdDevMs: Math.round(posStats.stdDev),
       });
     }
   }
