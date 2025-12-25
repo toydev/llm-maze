@@ -1,54 +1,51 @@
 import prettyMs from 'pretty-ms';
 
-export type ProgressReporter = {
-  update: () => void;
-  record: (success: boolean) => void;
-  finish: () => void;
-};
-
 const BAR_WIDTH = 20;
 
 function formatTime(ms: number): string {
   return prettyMs(ms, { colonNotation: true, secondsDecimalDigits: 0 }).padStart(5, '0');
 }
 
-export function createProgressReporter(total: number): ProgressReporter {
-  const startTime = Date.now();
-  let intervalId: ReturnType<typeof setInterval> | null = null;
-  let completed = 0;
-  let correct = 0;
+export class ProgressReporter {
+  private readonly total: number;
+  private readonly startTime: number;
+  private readonly intervalId: ReturnType<typeof setInterval>;
+  private completed = 0;
+  private correct = 0;
 
-  const render = () => {
-    const elapsed = Date.now() - startTime;
-    const progress = completed / total;
+  constructor(total: number) {
+    this.total = total;
+    this.startTime = Date.now();
+    this.intervalId = setInterval(() => this.render(), 1000);
+    this.render();
+  }
+
+  record(success: boolean): void {
+    this.completed++;
+    if (success) this.correct++;
+    this.render();
+  }
+
+  finish(): void {
+    clearInterval(this.intervalId);
+    this.render();
+    process.stdout.write('\n');
+  }
+
+  private render(): void {
+    const elapsed = Date.now() - this.startTime;
+    const progress = this.completed / this.total;
     const filledWidth = Math.floor(progress * BAR_WIDTH);
     const bar = '='.repeat(filledWidth) + (filledWidth < BAR_WIDTH ? '>' : '') + ' '.repeat(Math.max(0, BAR_WIDTH - filledWidth - 1));
 
     let eta = '--:--';
-    if (completed > 0) {
-      const avgTime = elapsed / completed;
-      const remainingTime = avgTime * (total - completed);
+    if (this.completed > 0) {
+      const avgTime = elapsed / this.completed;
+      const remainingTime = avgTime * (this.total - this.completed);
       eta = formatTime(remainingTime);
     }
 
-    const incorrect = completed - correct;
-    process.stdout.write(`\r[${bar}] ${completed}/${total} OK:${correct} NG:${incorrect} | ${formatTime(elapsed)} ETA: ${eta}`);
-  };
-
-  intervalId = setInterval(render, 1000);
-  render();
-
-  return {
-    update: render,
-    record: (success: boolean) => {
-      completed++;
-      if (success) correct++;
-      render();
-    },
-    finish: () => {
-      if (intervalId) clearInterval(intervalId);
-      render();
-      process.stdout.write('\n');
-    },
-  };
+    const incorrect = this.completed - this.correct;
+    process.stdout.write(`\r[${bar}] ${this.completed}/${this.total} OK:${this.correct} NG:${incorrect} | ${formatTime(elapsed)} ETA: ${eta}`);
+  }
 }
