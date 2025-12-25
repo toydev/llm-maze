@@ -3,52 +3,52 @@ import path from 'path';
 
 import yaml from 'yaml';
 
-import type { EvaluationResult } from '@/evaluation/result';
+import type { Evaluation } from '@/evaluation/result';
 
 const OUTPUT_DIR = './output';
 
-export type ResultFilter = {
+export type EvaluationFilter = {
   model?: string;
   maze?: string;
   strategy?: string;
 };
 
-export class Results {
-  static async all(): Promise<EvaluationResult[]> {
+export class Evaluations {
+  static async all(): Promise<Evaluation[]> {
     const yamlFiles = await findYamlFiles(OUTPUT_DIR);
-    const results: EvaluationResult[] = [];
+    const evaluations: Evaluation[] = [];
     for (const file of yamlFiles) {
       const content = await fs.readFile(file, 'utf-8');
-      results.push(yaml.parse(content) as EvaluationResult);
+      evaluations.push(yaml.parse(content) as Evaluation);
     }
-    return results;
+    return evaluations;
   }
 
-  static async find(filter: ResultFilter): Promise<EvaluationResult[]> {
-    let results = await this.all();
+  static async find(filter: EvaluationFilter): Promise<Evaluation[]> {
+    let evaluations = await this.all();
 
     if (filter.model && filter.model.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.modelName.includes(filter.model!));
+      evaluations = evaluations.filter((e) => e.modelName.includes(filter.model!));
     }
     if (filter.maze && filter.maze.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.mazeFile.includes(filter.maze!));
+      evaluations = evaluations.filter((e) => e.mazeFile.includes(filter.maze!));
     }
     if (filter.strategy && filter.strategy.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.strategyName === filter.strategy);
+      evaluations = evaluations.filter((e) => e.strategyName === filter.strategy);
     }
 
-    return results;
+    return evaluations;
   }
 
-  static async save(result: EvaluationResult): Promise<string> {
+  static async save(evaluation: Evaluation): Promise<string> {
     const timestamp = new Date().toISOString().replace(/:/g, '-');
-    const modelId = result.modelName.replace(/[:/]/g, '_');
-    const mazeName = path.basename(result.mazeFile, '.txt');
-    const outputDir = path.join(OUTPUT_DIR, modelId, result.strategyName, mazeName);
+    const modelId = evaluation.modelName.replace(/[:/]/g, '_');
+    const mazeName = path.basename(evaluation.mazeFile, '.txt');
+    const outputDir = path.join(OUTPUT_DIR, modelId, evaluation.strategyName, mazeName);
     await fs.mkdir(outputDir, { recursive: true });
 
     const filePath = path.join(outputDir, `${timestamp}.yaml`);
-    await fs.writeFile(filePath, yaml.stringify(result));
+    await fs.writeFile(filePath, yaml.stringify(evaluation));
     return filePath;
   }
 }

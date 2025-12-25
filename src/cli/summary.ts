@@ -3,7 +3,7 @@ import path from 'path';
 import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 
-import { Results, aggregateForSummary, toAccuracyDataFromSummary, type Summary } from '@/evaluation';
+import { Evaluations, aggregateForSummary, toAccuracyDataFromSummary, type Summary } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { renderAccuracyGrid } from '@/view';
 
@@ -18,13 +18,13 @@ program
   .action(async (model, maze, strategy) => {
     logger.info('Starting evaluation summary...');
 
-    const results = await Results.find({ model, maze, strategy });
-    if (results.length === 0) {
-      logger.warn('No results found.');
+    const evaluations = await Evaluations.find({ model, maze, strategy });
+    if (evaluations.length === 0) {
+      logger.warn('No evaluations found.');
       return;
     }
 
-    const summary = await aggregateForSummary(results);
+    const summary = await aggregateForSummary(evaluations);
 
     console.log('\n--- Overall Accuracy Summary ---');
     printSummaryTable(summary);

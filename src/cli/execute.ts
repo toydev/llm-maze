@@ -3,8 +3,8 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { program } from 'commander';
 
-import { Results } from '@/evaluation';
-import { MoveActionSchema, type EvaluationResult, type PositionResult } from '@/evaluation/result';
+import { Evaluations } from '@/evaluation';
+import { MoveActionSchema, type Evaluation, type Trial } from '@/evaluation/result';
 import { createGoalwardMoveMap, createPathMap } from '@/evaluation/solver';
 import { createLogger } from '@/logger/logger';
 import { Maze, Mazes, type Position } from '@/maze';
@@ -56,15 +56,15 @@ async function runSingleEvaluation(
   process.stdout.write(`\n${runInfo}\n`);
 
   try {
-    const result = await runEvaluation(mazeFile, strategyName, strategy, model);
-    const savedPath = await Results.save(result);
+    const evaluation = await runEvaluation(mazeFile, strategyName, strategy, model);
+    const savedPath = await Evaluations.save(evaluation);
     logger.info(`Saved: ${savedPath}`);
   } catch (error) {
     logger.error(`Failed: ${runInfo}`, error);
   }
 }
 
-async function runEvaluation(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<EvaluationResult> {
+async function runEvaluation(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<Evaluation> {
   const maze = await Maze.fromFile(mazeFile);
   const goalwardMoveMap = createGoalwardMoveMap(maze);
   const pathMap = createPathMap(maze, maze.startPosition);
@@ -73,7 +73,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
   const evaluationPositions = Array.from(goalwardMoveMap.keys());
-  const positionResults: PositionResult[] = [];
+  const trials: Trial[] = [];
   const progress = new ProgressReporter(evaluationPositions.length);
   const startTime = Date.now();
 
@@ -91,7 +91,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
       const llmMove = llmResponse.move;
       const isCorrect = correctMoveSet.has(llmMove);
 
-      positionResults.push({
+      trials.push({
         position: currentPos,
         isCorrect,
         llmMove,
@@ -102,7 +102,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
       progress.record(isCorrect);
     } catch (error) {
       logger.error(`[${posKey}] Error during LLM invocation:`, error);
-      positionResults.push({
+      trials.push({
         position: currentPos,
         isCorrect: false,
         llmMove: null,
@@ -116,7 +116,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
 
   progress.finish();
 
-  const correctMoves = positionResults.filter((r) => r.isCorrect).length;
+  const correctMoves = trials.filter((t) => t.isCorrect).length;
   const totalPositions = evaluationPositions.length;
   const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
   const totalTimeMs = Date.now() - startTime;
@@ -130,7 +130,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
     accuracy,
     totalTimeMs,
     averageTimePerPositionMs: totalPositions > 0 ? totalTimeMs / totalPositions : 0,
-    results: positionResults,
+    trials,
   };
 }
 

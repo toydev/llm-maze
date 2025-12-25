@@ -1,4 +1,4 @@
-import { EvaluationResult } from '@/evaluation/result';
+import { Evaluation } from '@/evaluation/result';
 import { Maze } from '@/maze/maze';
 
 // Statistics calculation
@@ -31,22 +31,22 @@ export type DetailAggregation = {
   overallStats: { times: number[]; correctCount: number; totalCount: number };
 };
 
-export function aggregateForDetail(results: EvaluationResult[]): DetailAggregation {
+export function aggregateForDetail(evaluations: Evaluation[]): DetailAggregation {
   const positionStats = new Map<string, { times: number[]; correctCount: number; totalCount: number }>();
   const overallStats = { times: [] as number[], correctCount: 0, totalCount: 0 };
 
-  for (const result of results) {
-    for (const posRes of result.results) {
-      const key = `${posRes.position.x},${posRes.position.y}`;
+  for (const evaluation of evaluations) {
+    for (const trial of evaluation.trials) {
+      const key = `${trial.position.x},${trial.position.y}`;
       if (!positionStats.has(key)) {
         positionStats.set(key, { times: [], correctCount: 0, totalCount: 0 });
       }
       const stats = positionStats.get(key)!;
-      if (posRes.timeMs) {
-        stats.times.push(posRes.timeMs);
-        overallStats.times.push(posRes.timeMs);
+      if (trial.timeMs) {
+        stats.times.push(trial.timeMs);
+        overallStats.times.push(trial.timeMs);
       }
-      if (posRes.isCorrect) {
+      if (trial.isCorrect) {
         stats.correctCount++;
         overallStats.correctCount++;
       }
@@ -55,7 +55,7 @@ export function aggregateForDetail(results: EvaluationResult[]): DetailAggregati
     }
   }
 
-  return { totalTrials: results.length, positionStats, overallStats };
+  return { totalTrials: evaluations.length, positionStats, overallStats };
 }
 
 // Summary aggregation (for multiple models/mazes/strategies)
@@ -73,21 +73,21 @@ export type SummaryAggregation = {
 
 export type Summary = Map<string, Map<string, Map<string, SummaryAggregation>>>;
 
-export async function aggregateForSummary(results: EvaluationResult[]): Promise<Summary> {
+export async function aggregateForSummary(evaluations: Evaluation[]): Promise<Summary> {
   const summary: Summary = new Map();
 
-  for (const res of results) {
-    if (!summary.has(res.modelName)) {
-      summary.set(res.modelName, new Map());
+  for (const evaluation of evaluations) {
+    if (!summary.has(evaluation.modelName)) {
+      summary.set(evaluation.modelName, new Map());
     }
-    const modelSummary = summary.get(res.modelName)!;
+    const modelSummary = summary.get(evaluation.modelName)!;
 
-    if (!modelSummary.has(res.strategyName)) {
-      modelSummary.set(res.strategyName, new Map());
+    if (!modelSummary.has(evaluation.strategyName)) {
+      modelSummary.set(evaluation.strategyName, new Map());
     }
-    const strategySummary = modelSummary.get(res.strategyName)!;
+    const strategySummary = modelSummary.get(evaluation.strategyName)!;
 
-    const mazeFilePath = res.mazeFile.replace(/\\/g, '/');
+    const mazeFilePath = evaluation.mazeFile.replace(/\\/g, '/');
     if (!strategySummary.has(mazeFilePath)) {
       const maze = await Maze.fromFile(mazeFilePath);
       strategySummary.set(mazeFilePath, {
@@ -105,14 +105,14 @@ export async function aggregateForSummary(results: EvaluationResult[]): Promise<
     const agg = strategySummary.get(mazeFilePath)!;
 
     agg.totalRuns++;
-    agg.totalCorrectMoves += res.correctMoves;
-    agg.totalPositions += res.totalPositions;
-    agg.totalTimeMs += res.totalTimeMs ?? 0;
+    agg.totalCorrectMoves += evaluation.correctMoves;
+    agg.totalPositions += evaluation.totalPositions;
+    agg.totalTimeMs += evaluation.totalTimeMs ?? 0;
 
-    for (const posRes of res.results) {
-      const key = `${posRes.position.x},${posRes.position.y}`;
+    for (const trial of evaluation.trials) {
+      const key = `${trial.position.x},${trial.position.y}`;
       agg.positionalTotalCounts.set(key, (agg.positionalTotalCounts.get(key) ?? 0) + 1);
-      if (posRes.isCorrect) {
+      if (trial.isCorrect) {
         agg.positionalCorrectCounts.set(key, (agg.positionalCorrectCounts.get(key) ?? 0) + 1);
       }
     }

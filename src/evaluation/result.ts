@@ -10,7 +10,7 @@ export const MoveActionSchema = z.object({
 });
 export type MoveAction = z.infer<typeof MoveActionSchema>;
 
-export type PositionResult = {
+export type Trial = {
   position: Position;
   isCorrect: boolean;
   llmMove: Move | null;
@@ -18,7 +18,7 @@ export type PositionResult = {
   timeMs?: number;
 };
 
-export type EvaluationResult = {
+export type Evaluation = {
   mazeFile: string;
   modelName: string;
   strategyName: string;
@@ -27,5 +27,5 @@ export type EvaluationResult = {
   accuracy: number;
   totalTimeMs: number;
   averageTimePerPositionMs: number;
-  results: PositionResult[];
+  trials: Trial[];
 };

@@ -1,7 +1,7 @@
 import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 
-import { Results, aggregateForDetail, calculateStats, toAccuracyDataFromDetail, toTimingData, type DetailAggregation } from '@/evaluation';
+import { Evaluations, aggregateForDetail, calculateStats, toAccuracyDataFromDetail, toTimingData, type DetailAggregation } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze';
 import { renderAccuracyGrid, renderTimingGrid } from '@/view';
@@ -40,19 +40,19 @@ program
   .argument('<strategy>', 'Strategy name')
   .option('--json', 'Output in JSON format', false)
   .action(async (model, maze, strategy, options) => {
-    const results = await Results.find({ model, maze, strategy });
+    const evaluations = await Evaluations.find({ model, maze, strategy });
 
-    if (results.length === 0) {
+    if (evaluations.length === 0) {
       if (options.json) {
-        console.log(JSON.stringify({ error: `No results found for: model=${model}, maze=${maze}, strategy=${strategy}` }));
+        console.log(JSON.stringify({ error: `No evaluations found for: model=${model}, maze=${maze}, strategy=${strategy}` }));
       } else {
-        logger.error(`No results found for: model=${model}, maze=${maze}, strategy=${strategy}`);
+        logger.error(`No evaluations found for: model=${model}, maze=${maze}, strategy=${strategy}`);
       }
       return;
     }
 
-    const mazeFile = results[0].mazeFile;
-    const agg = aggregateForDetail(results);
+    const mazeFile = evaluations[0].mazeFile;
+    const agg = aggregateForDetail(evaluations);
 
     if (options.json) {
       const output = buildJsonOutput(model, maze, strategy, agg);
@@ -64,7 +64,7 @@ program
     console.log(`Model: ${model}`);
     console.log(`Maze: ${maze}`);
     console.log(`Strategy: ${strategy}`);
-    console.log(`Files: ${results.length}`);
+    console.log(`Files: ${evaluations.length}`);
 
     printStatistics(agg);
     await printAccuracyGrid(mazeFile, agg);
