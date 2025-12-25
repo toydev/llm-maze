@@ -14,14 +14,10 @@
     "detail": "vite-node src/cli/detail.ts"
   },
   "dependencies": {
-    "@langchain/google-genai": "^2.1.0",
-    "@langchain/langgraph": "^1.0.4",
     "@langchain/ollama": "^1.1.0",
     "citty": "^0.1.6",
-    "dotenv": "^17.2.3",
     "loglevel": "^1.9.2",
-    "yaml": "^2.8.2",
-    "zod-to-json-schema": "^3.25.0"
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.5",
