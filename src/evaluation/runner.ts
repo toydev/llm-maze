@@ -1,11 +1,10 @@
 import { ChatOllama } from '@langchain/ollama';
 import log from 'loglevel';
 
-import { EvaluationResult, PositionResult } from '@/evaluation/result';
+import { EvaluationResult, MoveActionSchema, PositionResult } from '@/evaluation/result';
 import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/evaluation/solver';
 import { Maze, Position } from '@/maze/maze';
 import { PromptStrategy } from '@/prompt';
-import { MoveActionSchema } from '@/prompt/template';
 
 export type ProgressCallback = (isCorrect: boolean) => void;
 

@@ -1,18 +1,4 @@
-import { z } from 'zod';
-
 import { Position } from '@/maze/maze';
-
-// Move type definition for LLM interface
-export const MOVES = ['up', 'down', 'left', 'right'] as const;
-export type Move = (typeof MOVES)[number];
-
-// Zod schema for LLM response validation
-export const MoveActionSchema = z.object({
-  move: z.enum(MOVES),
-});
-export type MoveAction = z.infer<typeof MoveActionSchema>;
-
-// Prompt template components
 export const COORDINATE_SYSTEM_NOTE = `Note: In this coordinate system, y increases downward.
 - up: y-1
 - down: y+1

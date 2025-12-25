@@ -1,5 +1,5 @@
+import { Move } from '@/evaluation/result';
 import { Maze, Position } from '@/maze/maze';
-import { Move } from '@/prompt/template';
 
 type DistanceMap = Map<string, number>;
 export type PathMap = Map<string, Position[]>;

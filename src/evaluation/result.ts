@@ -2,9 +2,17 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import yaml from 'yaml';
+import { z } from 'zod';
 
 import { Position } from '@/maze/maze';
-import { Move } from '@/prompt/template';
+
+export const MOVES = ['up', 'down', 'left', 'right'] as const;
+export type Move = (typeof MOVES)[number];
+
+export const MoveActionSchema = z.object({
+  move: z.enum(MOVES),
+});
+export type MoveAction = z.infer<typeof MoveActionSchema>;
 
 export type PositionResult = {
   position: Position;
