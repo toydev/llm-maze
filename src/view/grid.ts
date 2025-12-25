@@ -1,7 +1,7 @@
 import pc from 'picocolors';
+import prettyMs from 'pretty-ms';
 
 import { type AccuracyData, type TimingData } from '@/evaluation';
-import { formatDuration } from '@/view/format';
 
 function buildBaseGrid(layout: string[]): string[][] {
   return layout.map((row) => row.split('').map((char) => (char === '#' ? pc.gray('·') : char)));
@@ -50,7 +50,7 @@ export function renderTimingGrid(layout: string[], data: TimingData, trials: num
   };
 
   console.log(`${indent}--- Timing Grid (avg of ${trials} trials) ---`);
-  console.log(`${indent}Min avg: ${formatDuration(minTime)}, Max avg: ${formatDuration(maxTime)}`);
+  console.log(`${indent}Min avg: ${prettyMs(minTime)}, Max avg: ${prettyMs(maxTime)}`);
   console.log(`${indent}Legend: ${pc.cyan('0')}=fastest, ${pc.green('1-2')}=fast, ${pc.yellow('3-5')}=mid, ${pc.red('6-9')}=slow\n`);
 
   const grid = buildBaseGrid(layout);

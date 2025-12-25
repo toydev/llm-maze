@@ -1,9 +1,10 @@
 import { program } from 'commander';
+import prettyMs from 'pretty-ms';
 
 import { Results, aggregateForDetail, calculateStats, toAccuracyDataFromDetail, toTimingData, type DetailAggregation } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze';
-import { formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/view';
+import { renderAccuracyGrid, renderTimingGrid } from '@/view';
 
 type JsonOutput = {
   model: string;
@@ -87,12 +88,12 @@ function printStatistics(agg: DetailAggregation): void {
   console.log(`\n--- Statistics (${agg.totalTrials} trials) ---`);
   console.log(`Total positions: ${totalCount} (${totalCount / agg.totalTrials} per trial)`);
   console.log(`Correct: ${correctCount}/${totalCount} (${accuracy.toFixed(1)}%)`);
-  console.log(`Total time: ${formatDuration(sum)}`);
-  console.log(`Average: ${formatDuration(avg)}`);
-  console.log(`Median: ${formatDuration(median)}`);
-  console.log(`Min: ${formatDuration(min)}`);
-  console.log(`Max: ${formatDuration(max)}`);
-  console.log(`Std Dev: ${formatDuration(stdDev)}`);
+  console.log(`Total time: ${prettyMs(sum)}`);
+  console.log(`Average: ${prettyMs(avg)}`);
+  console.log(`Median: ${prettyMs(median)}`);
+  console.log(`Min: ${prettyMs(min)}`);
+  console.log(`Max: ${prettyMs(max)}`);
+  console.log(`Std Dev: ${prettyMs(stdDev)}`);
 }
 
 async function printAccuracyGrid(mazeFile: string, agg: DetailAggregation): Promise<void> {
@@ -128,10 +129,10 @@ function printPositionDetails(agg: DetailAggregation): void {
     const [x, y] = entry.key.split(',');
     const pos = `(${x},${y})`.padEnd(12);
     const acc = `${(entry.accuracy * 100).toFixed(0)}%`.padEnd(12);
-    const avgTime = formatDuration(entry.avgTime).padEnd(12);
-    const min = formatDuration(entry.min).padEnd(10);
-    const max = formatDuration(entry.max).padEnd(10);
-    const stdDev = formatDuration(entry.stdDev).padEnd(10);
+    const avgTime = prettyMs(entry.avgTime).padEnd(12);
+    const min = prettyMs(entry.min).padEnd(10);
+    const max = prettyMs(entry.max).padEnd(10);
+    const stdDev = prettyMs(entry.stdDev).padEnd(10);
     console.log(`${pos}${acc}${avgTime}${min}${max}${stdDev}`);
   }
 }

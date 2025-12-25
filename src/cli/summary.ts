@@ -1,10 +1,11 @@
 import path from 'path';
 
 import { program } from 'commander';
+import prettyMs from 'pretty-ms';
 
 import { Results, aggregateForSummary, toAccuracyDataFromSummary, type Summary } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
-import { formatDuration, renderAccuracyGrid } from '@/view';
+import { renderAccuracyGrid } from '@/view';
 
 const logger = createLogger('summary');
 
@@ -60,7 +61,7 @@ function printSummaryTable(summary: Summary): void {
         });
         const overallAccuracy = totalPositions > 0 ? (totalCorrect / totalPositions) * 100 : 0;
         const avgTimePerPos = totalPositions > 0 ? totalTimeMs / totalPositions : 0;
-        row += `${overallAccuracy.toFixed(1)}% (${formatDuration(avgTimePerPos)}/pos)`.padEnd(25);
+        row += `${overallAccuracy.toFixed(1)}% (${prettyMs(avgTimePerPos)}/pos)`.padEnd(25);
       } else {
         row += 'N/A'.padEnd(25);
       }

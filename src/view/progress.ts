@@ -1,4 +1,4 @@
-import { formatElapsed } from '@/view/format';
+import prettyMs from 'pretty-ms';
 
 export type ProgressReporter = {
   update: () => void;
@@ -7,6 +7,10 @@ export type ProgressReporter = {
 };
 
 const BAR_WIDTH = 20;
+
+function formatTime(ms: number): string {
+  return prettyMs(ms, { colonNotation: true, secondsDecimalDigits: 0 }).padStart(5, '0');
+}
 
 export function createProgressReporter(total: number): ProgressReporter {
   const startTime = Date.now();
@@ -24,11 +28,11 @@ export function createProgressReporter(total: number): ProgressReporter {
     if (completed > 0) {
       const avgTime = elapsed / completed;
       const remainingTime = avgTime * (total - completed);
-      eta = formatElapsed(remainingTime);
+      eta = formatTime(remainingTime);
     }
 
     const incorrect = completed - correct;
-    process.stdout.write(`\r[${bar}] ${completed}/${total} OK:${correct} NG:${incorrect} | ${formatElapsed(elapsed)} ETA: ${eta}`);
+    process.stdout.write(`\r[${bar}] ${completed}/${total} OK:${correct} NG:${incorrect} | ${formatTime(elapsed)} ETA: ${eta}`);
   };
 
   intervalId = setInterval(render, 1000);
