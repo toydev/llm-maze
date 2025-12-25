@@ -2,13 +2,7 @@ import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
 
-import {
-  loadResults,
-  aggregateForSummary,
-  toAccuracyDataFromSummary,
-  type Summary,
-  type SummaryAggregation,
-} from '@/evaluation';
+import { loadResults, aggregateForSummary, toAccuracyDataFromSummary, type Summary } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { formatDuration, renderAccuracyGrid } from '@/view';
 

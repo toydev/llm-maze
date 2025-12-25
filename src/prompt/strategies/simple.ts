@@ -1,5 +1,4 @@
-import { Maze } from '@/maze/maze';
-import { Position } from '@/maze/maze';
+import { Maze, Position } from '@/maze/maze';
 import { PromptStrategy } from '@/prompt/strategy';
 import { COORDINATE_SYSTEM_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/template';
 

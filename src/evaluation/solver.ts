@@ -1,5 +1,4 @@
-import { Maze } from '@/maze/maze';
-import { Position } from '@/maze/maze';
+import { Maze, Position } from '@/maze/maze';
 import { Move } from '@/prompt/template';
 
 type DistanceMap = Map<string, number>;

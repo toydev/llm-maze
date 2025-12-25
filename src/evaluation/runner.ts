@@ -3,8 +3,7 @@ import log from 'loglevel';
 
 import { EvaluationResult, PositionResult } from '@/evaluation/result';
 import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/evaluation/solver';
-import { Maze } from '@/maze/maze';
-import { Position } from '@/maze/maze';
+import { Maze, Position } from '@/maze/maze';
 import { PromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/template';
 

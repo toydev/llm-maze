@@ -1,13 +1,6 @@
 import { defineCommand, runMain } from 'citty';
 
-import {
-  loadResults,
-  aggregateForDetail,
-  calculateStats,
-  toAccuracyDataFromDetail,
-  toTimingData,
-  type DetailAggregation,
-} from '@/evaluation';
+import { loadResults, aggregateForDetail, calculateStats, toAccuracyDataFromDetail, toTimingData, type DetailAggregation } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
 import { formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/view';
