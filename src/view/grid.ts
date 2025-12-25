@@ -1,4 +1,4 @@
-import { colors, colorize, formatDuration } from '@/cli/view/format';
+import { colors, colorize, formatDuration } from '@/view/format';
 
 export type AccuracyData = Map<string, { correct: number; total: number }>;
 export type TimingData = Map<string, number>;

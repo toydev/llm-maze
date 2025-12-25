@@ -4,7 +4,7 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { defineCommand, runMain } from 'citty';
 
-import { createProgressReporter } from '@/cli/view';
+import { createProgressReporter } from '@/view';
 import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
 import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/evaluation/solver';
 import { createLogger } from '@/logger/logger';

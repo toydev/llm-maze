@@ -1,4 +1,4 @@
-import { formatElapsed } from '@/cli/view/format';
+import { formatElapsed } from '@/view/format';
 
 export type ProgressReporter = {
   update: () => void;

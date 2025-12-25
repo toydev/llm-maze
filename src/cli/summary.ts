@@ -2,7 +2,7 @@ import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
 
-import { type AccuracyData, formatDuration, renderAccuracyGrid } from '@/cli/view';
+import { type AccuracyData, formatDuration, renderAccuracyGrid } from '@/view';
 import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';

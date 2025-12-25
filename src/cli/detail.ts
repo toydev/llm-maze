@@ -1,6 +1,6 @@
 import { defineCommand, runMain } from 'citty';
 
-import { type AccuracyData, type TimingData, formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/cli/view';
+import { type AccuracyData, type TimingData, formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/view';
 import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
