@@ -130,6 +130,10 @@ const main = defineCommand({
   async run({ args }) {
     const { model, maze: mazePathArg, strategy: strategyArg, times: timesStr, 'no-warmup': noWarmup } = args;
     const times = parseInt(timesStr, 10);
+    if (isNaN(times) || times < 1) {
+      logger.error('times must be a positive integer');
+      return;
+    }
 
     if (!noWarmup) {
       process.stdout.write('Warming up LLM...');
