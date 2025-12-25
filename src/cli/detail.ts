@@ -1,8 +1,8 @@
 import { program } from 'commander';
 
-import { loadResults, aggregateForDetail, calculateStats, toAccuracyDataFromDetail, toTimingData, type DetailAggregation } from '@/evaluation';
+import { Results, aggregateForDetail, calculateStats, toAccuracyDataFromDetail, toTimingData, type DetailAggregation } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
-import { Maze } from '@/maze/maze';
+import { Maze } from '@/maze';
 import { formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/view';
 
 type JsonOutput = {
@@ -39,19 +39,9 @@ program
   .argument('<strategy>', 'Strategy name')
   .option('--json', 'Output in JSON format', false)
   .action(async (model, maze, strategy, options) => {
-    const allResults = await loadResults();
-    if (allResults.length === 0) {
-      if (options.json) {
-        console.log(JSON.stringify({ error: 'No result files found' }));
-      } else {
-        logger.error('No result files found in output directory.');
-      }
-      return;
-    }
+    const results = await Results.find({ model, maze, strategy });
 
-    const matchingResults = allResults.filter((r) => r.modelName.includes(model) && r.mazeFile.includes(maze) && r.strategyName === strategy);
-
-    if (matchingResults.length === 0) {
+    if (results.length === 0) {
       if (options.json) {
         console.log(JSON.stringify({ error: `No results found for: model=${model}, maze=${maze}, strategy=${strategy}` }));
       } else {
@@ -60,8 +50,8 @@ program
       return;
     }
 
-    const mazeFile = matchingResults[0].mazeFile;
-    const agg = aggregateForDetail(matchingResults);
+    const mazeFile = results[0].mazeFile;
+    const agg = aggregateForDetail(results);
 
     if (options.json) {
       const output = buildJsonOutput(model, maze, strategy, agg);
@@ -73,7 +63,7 @@ program
     console.log(`Model: ${model}`);
     console.log(`Maze: ${maze}`);
     console.log(`Strategy: ${strategy}`);
-    console.log(`Files: ${matchingResults.length}`);
+    console.log(`Files: ${results.length}`);
 
     printStatistics(agg);
     await printAccuracyGrid(mazeFile, agg);

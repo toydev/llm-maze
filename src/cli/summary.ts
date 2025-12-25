@@ -2,7 +2,7 @@ import path from 'path';
 
 import { program } from 'commander';
 
-import { loadResults, aggregateForSummary, toAccuracyDataFromSummary, type Summary } from '@/evaluation';
+import { Results, aggregateForSummary, toAccuracyDataFromSummary, type Summary } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { formatDuration, renderAccuracyGrid } from '@/view';
 
@@ -16,24 +16,10 @@ program
   .argument('[strategy]', 'Filter by strategy name', 'all')
   .action(async (model, maze, strategy) => {
     logger.info('Starting evaluation summary...');
-    let results = await loadResults();
-    if (results.length === 0) {
-      logger.warn('No result files found in output directory.');
-      return;
-    }
 
-    if (model.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.modelName.includes(model));
-    }
-    if (maze.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.mazeFile.includes(maze));
-    }
-    if (strategy.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.strategyName === strategy);
-    }
-
+    const results = await Results.find({ model, maze, strategy });
     if (results.length === 0) {
-      logger.warn('No results match the filter criteria.');
+      logger.warn('No results found.');
       return;
     }
 
