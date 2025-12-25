@@ -1,7 +1,7 @@
 import { Maze } from '@/maze/maze';
 import { CellType, Position } from '@/maze/types';
 import { PromptStrategy } from '@/prompt/prompt-strategy';
-import { COORDINATE_SYSTEM_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/promptTemplate';
+import { COORDINATE_SYSTEM_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/prompt-template';
 
 export class ListPromptStrategy implements PromptStrategy {
   private generateWalkableList(maze: Maze): string[] {

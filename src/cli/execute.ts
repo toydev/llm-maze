@@ -11,7 +11,7 @@ import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
 import { Position } from '@/maze/types';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixPromptStrategy, ListPromptStrategy } from '@/prompt';
-import { MoveActionSchema } from '@/prompt/promptTemplate';
+import { MoveActionSchema } from '@/prompt/prompt-template';
 
 const logger = createLogger('execute');
 
