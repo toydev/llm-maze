@@ -4,89 +4,12 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { defineCommand, runMain } from 'citty';
 
-import { createProgressReporter } from '@/view';
-import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
-import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/evaluation/solver';
+import { runEvaluation, saveResult } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
-import { Maze } from '@/maze/maze';
-import { Position } from '@/maze/maze';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixPromptStrategy, ListPromptStrategy } from '@/prompt';
-import { MoveActionSchema } from '@/prompt/prompt-template';
+import { createProgressReporter } from '@/view';
 
 const logger = createLogger('execute');
-
-async function executeStrategy(mazeFile: string, strategyName: string, strategy: PromptStrategy, modelName: string): Promise<EvaluationResult> {
-  logger.info(`Executing for maze: ${mazeFile}, strategy: ${strategyName}, model: ${modelName}`);
-
-  const maze = await Maze.fromFile(mazeFile);
-  const goalwardMoveMap = createGoalwardMoveMap(maze);
-  const pathMap = createUnbiasedPathMap(maze);
-
-  const llm = new ChatOllama({ model: modelName });
-  const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
-
-  const evaluationPositions = Array.from(goalwardMoveMap.keys());
-  const positionResults: PositionResult[] = [];
-
-  const progress = createProgressReporter(evaluationPositions.length);
-  const startTime = Date.now();
-
-  for (const posKey of evaluationPositions) {
-    const [x, y] = posKey.split(',').map(Number);
-    const currentPos: Position = { x, y };
-    const correctMoveSet = new Set(goalwardMoveMap.get(posKey)!);
-
-    const history = pathMap.get(posKey) ?? [currentPos];
-    const prompt = strategy.build(maze, history);
-
-    const posStartTime = Date.now();
-    try {
-      const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
-      const llmMove = llmResponse.move;
-      const isCorrect = correctMoveSet.has(llmMove);
-
-      positionResults.push({
-        position: currentPos,
-        isCorrect,
-        llmMove,
-        validMoves: Array.from(correctMoveSet),
-        timeMs: Date.now() - posStartTime,
-      });
-
-      progress.record(isCorrect);
-    } catch (error) {
-      logger.error(`[${posKey}] Error during LLM invocation:`, error);
-      positionResults.push({
-        position: currentPos,
-        isCorrect: false,
-        llmMove: null,
-        validMoves: Array.from(correctMoveSet),
-        timeMs: Date.now() - posStartTime,
-      });
-
-      progress.record(false);
-    }
-  }
-
-  progress.finish();
-
-  const correctMoves = positionResults.filter((r) => r.isCorrect).length;
-  const totalPositions = evaluationPositions.length;
-  const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
-  const totalTimeMs = Date.now() - startTime;
-
-  return {
-    mazeFile: mazeFile.replace(/\\/g, '/'),
-    modelName,
-    strategyName,
-    totalPositions,
-    correctMoves,
-    accuracy,
-    totalTimeMs,
-    averageTimePerPositionMs: totalPositions > 0 ? totalTimeMs / totalPositions : 0,
-    results: positionResults,
-  };
-}
 
 const strategiesMap = new Map<string, PromptStrategy>([
   ['simple', new SimplePromptStrategy()],
@@ -185,7 +108,19 @@ const main = defineCommand({
           process.stdout.write(`\n${runInfo}\n`);
 
           try {
-            const result = await executeStrategy(mazeFile, strategyName, strategy, model);
+            let progress: ReturnType<typeof createProgressReporter>;
+            const result = await runEvaluation({
+              mazeFile,
+              strategyName,
+              strategy,
+              modelName: model,
+              logger,
+              onStart: (total) => {
+                progress = createProgressReporter(total);
+              },
+              onProgress: (isCorrect) => progress.record(isCorrect),
+              onFinish: () => progress.finish(),
+            });
             const savedPath = await saveResult(result);
             logger.info(`Saved: ${savedPath}`);
           } catch (error) {
