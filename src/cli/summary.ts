@@ -2,83 +2,17 @@ import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
 
-import { type AccuracyData, formatDuration, renderAccuracyGrid } from '@/view';
-import { EvaluationResult, loadResults } from '@/evaluation';
+import {
+  loadResults,
+  aggregateForSummary,
+  toAccuracyDataFromSummary,
+  type Summary,
+  type SummaryAggregation,
+} from '@/evaluation';
 import { createLogger } from '@/logger/logger';
-import { Maze } from '@/maze/maze';
+import { formatDuration, renderAccuracyGrid } from '@/view';
 
 const logger = createLogger('summary');
-
-type AggregatedResult = {
-  totalRuns: number;
-  totalCorrectMoves: number;
-  totalPositions: number;
-  averageAccuracy: number;
-  totalTimeMs: number;
-  averageTimePerPositionMs: number;
-  positionalCorrectCounts: Map<string, number>;
-  positionalTotalCounts: Map<string, number>;
-  mazeLayout: string[];
-};
-
-type Summary = Map<string, Map<string, Map<string, AggregatedResult>>>;
-
-async function calculateSummary(results: EvaluationResult[]): Promise<Summary> {
-  const summary: Summary = new Map();
-
-  for (const res of results) {
-    if (!summary.has(res.modelName)) {
-      summary.set(res.modelName, new Map());
-    }
-    const modelSummary = summary.get(res.modelName)!;
-
-    if (!modelSummary.has(res.strategyName)) {
-      modelSummary.set(res.strategyName, new Map());
-    }
-    const strategySummary = modelSummary.get(res.strategyName)!;
-
-    const mazeFilePath = res.mazeFile.replace(/\\/g, '/');
-    if (!strategySummary.has(mazeFilePath)) {
-      const maze = await Maze.fromFile(mazeFilePath);
-      strategySummary.set(mazeFilePath, {
-        totalRuns: 0,
-        totalCorrectMoves: 0,
-        totalPositions: 0,
-        averageAccuracy: 0,
-        totalTimeMs: 0,
-        averageTimePerPositionMs: 0,
-        positionalCorrectCounts: new Map(),
-        positionalTotalCounts: new Map(),
-        mazeLayout: maze.layout,
-      });
-    }
-    const agg = strategySummary.get(mazeFilePath)!;
-
-    agg.totalRuns++;
-    agg.totalCorrectMoves += res.correctMoves;
-    agg.totalPositions += res.totalPositions;
-    agg.totalTimeMs += res.totalTimeMs ?? 0;
-
-    for (const posRes of res.results) {
-      const key = `${posRes.position.x},${posRes.position.y}`;
-      agg.positionalTotalCounts.set(key, (agg.positionalTotalCounts.get(key) ?? 0) + 1);
-      if (posRes.isCorrect) {
-        agg.positionalCorrectCounts.set(key, (agg.positionalCorrectCounts.get(key) ?? 0) + 1);
-      }
-    }
-  }
-
-  for (const modelMap of summary.values()) {
-    for (const strategyMap of modelMap.values()) {
-      for (const agg of strategyMap.values()) {
-        agg.averageAccuracy = agg.totalPositions > 0 ? (agg.totalCorrectMoves / agg.totalPositions) * 100 : 0;
-        agg.averageTimePerPositionMs = agg.totalPositions > 0 ? agg.totalTimeMs / agg.totalPositions : 0;
-      }
-    }
-  }
-
-  return summary;
-}
 
 function printSummaryTable(summary: Summary): void {
   const models = Array.from(summary.keys()).sort();
@@ -115,15 +49,6 @@ function printSummaryTable(summary: Summary): void {
   });
 }
 
-function toAccuracyData(agg: AggregatedResult): AccuracyData {
-  const data = new Map<string, { correct: number; total: number }>();
-  for (const [key, total] of agg.positionalTotalCounts) {
-    const correct = agg.positionalCorrectCounts.get(key) ?? 0;
-    data.set(key, { correct, total });
-  }
-  return data;
-}
-
 function printGridPerformance(summary: Summary): void {
   const models = Array.from(summary.keys()).sort();
   models.forEach((model) => {
@@ -138,7 +63,7 @@ function printGridPerformance(summary: Summary): void {
         const agg = strategyMap.get(mazeFile)!;
         const mazeName = path.basename(mazeFile, '.txt');
         console.log(`\n    ${mazeName}:`);
-        renderAccuracyGrid(agg.mazeLayout, toAccuracyData(agg), '    ');
+        renderAccuracyGrid(agg.mazeLayout, toAccuracyDataFromSummary(agg), '    ');
       });
     });
   });
@@ -191,7 +116,7 @@ const main = defineCommand({
       return;
     }
 
-    const summary = await calculateSummary(results);
+    const summary = await aggregateForSummary(results);
 
     console.log('\n--- Overall Accuracy Summary ---');
     printSummaryTable(summary);

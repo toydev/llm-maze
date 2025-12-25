@@ -1,62 +1,20 @@
 import { defineCommand, runMain } from 'citty';
 
-import { type AccuracyData, type TimingData, formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/view';
-import { EvaluationResult, loadResults } from '@/evaluation';
+import {
+  loadResults,
+  aggregateForDetail,
+  calculateStats,
+  toAccuracyDataFromDetail,
+  toTimingData,
+  type DetailAggregation,
+} from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
+import { formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/view';
 
 const logger = createLogger('detail');
 
-type AggregatedStats = {
-  totalTrials: number;
-  positionStats: Map<string, { times: number[]; correctCount: number; totalCount: number }>;
-  overallStats: { times: number[]; correctCount: number; totalCount: number };
-};
-
-type Stats = { avg: number; median: number; min: number; max: number; stdDev: number };
-
-function calculateStats(times: number[]): Stats {
-  if (times.length === 0) {
-    return { avg: 0, median: 0, min: 0, max: 0, stdDev: 0 };
-  }
-  const sorted = [...times].sort((a, b) => a - b);
-  const avg = sorted.reduce((a, b) => a + b, 0) / sorted.length;
-  const median = sorted[Math.floor(sorted.length / 2)];
-  const min = sorted[0];
-  const max = sorted[sorted.length - 1];
-  const variance = sorted.reduce((acc, t) => acc + Math.pow(t - avg, 2), 0) / sorted.length;
-  const stdDev = Math.sqrt(variance);
-  return { avg, median, min, max, stdDev };
-}
-
-function aggregateResults(results: EvaluationResult[]): AggregatedStats {
-  const positionStats = new Map<string, { times: number[]; correctCount: number; totalCount: number }>();
-  const overallStats = { times: [] as number[], correctCount: 0, totalCount: 0 };
-
-  for (const result of results) {
-    for (const posRes of result.results) {
-      const key = `${posRes.position.x},${posRes.position.y}`;
-      if (!positionStats.has(key)) {
-        positionStats.set(key, { times: [], correctCount: 0, totalCount: 0 });
-      }
-      const stats = positionStats.get(key)!;
-      if (posRes.timeMs) {
-        stats.times.push(posRes.timeMs);
-        overallStats.times.push(posRes.timeMs);
-      }
-      if (posRes.isCorrect) {
-        stats.correctCount++;
-        overallStats.correctCount++;
-      }
-      stats.totalCount++;
-      overallStats.totalCount++;
-    }
-  }
-
-  return { totalTrials: results.length, positionStats, overallStats };
-}
-
-function printStatistics(agg: AggregatedStats): void {
+function printStatistics(agg: DetailAggregation): void {
   const { times, correctCount, totalCount } = agg.overallStats;
   if (times.length === 0) {
     console.log('\nNo timing data available.');
@@ -78,37 +36,19 @@ function printStatistics(agg: AggregatedStats): void {
   console.log(`Std Dev: ${formatDuration(stdDev)}`);
 }
 
-function toAccuracyData(agg: AggregatedStats): AccuracyData {
-  const data = new Map<string, { correct: number; total: number }>();
-  for (const [key, stats] of agg.positionStats) {
-    data.set(key, { correct: stats.correctCount, total: stats.totalCount });
-  }
-  return data;
-}
-
-function toTimingData(agg: AggregatedStats): TimingData {
-  const data = new Map<string, number>();
-  for (const [key, stats] of agg.positionStats) {
-    if (stats.times.length > 0) {
-      data.set(key, stats.times.reduce((a, b) => a + b, 0) / stats.times.length);
-    }
-  }
-  return data;
-}
-
-async function printAccuracyGrid(mazeFile: string, agg: AggregatedStats): Promise<void> {
+async function printAccuracyGrid(mazeFile: string, agg: DetailAggregation): Promise<void> {
   const maze = await Maze.fromFile(mazeFile);
   console.log(`\n--- Accuracy Grid (${agg.totalTrials} trials) ---`);
-  renderAccuracyGrid(maze.layout, toAccuracyData(agg));
+  renderAccuracyGrid(maze.layout, toAccuracyDataFromDetail(agg));
 }
 
-async function printTimingGrid(mazeFile: string, agg: AggregatedStats): Promise<void> {
+async function printTimingGrid(mazeFile: string, agg: DetailAggregation): Promise<void> {
   const maze = await Maze.fromFile(mazeFile);
   console.log('');
   renderTimingGrid(maze.layout, toTimingData(agg), agg.totalTrials);
 }
 
-function printPositionDetails(agg: AggregatedStats): void {
+function printPositionDetails(agg: DetailAggregation): void {
   console.log(`\n--- Position Details (sorted by avg time) ---`);
   console.log(`${'Position'.padEnd(12)}${'Accuracy'.padEnd(12)}${'Avg Time'.padEnd(12)}${'Min'.padEnd(10)}${'Max'.padEnd(10)}${'StdDev'.padEnd(10)}`);
   console.log('-'.repeat(66));
@@ -161,7 +101,7 @@ type JsonOutput = {
   }[];
 };
 
-function buildJsonOutput(model: string, maze: string, strategy: string, agg: AggregatedStats): JsonOutput {
+function buildJsonOutput(model: string, maze: string, strategy: string, agg: DetailAggregation): JsonOutput {
   const { times, correctCount, totalCount } = agg.overallStats;
   const { avg, median, min, max, stdDev } = calculateStats(times);
 
@@ -253,7 +193,7 @@ const main = defineCommand({
 
     const mazeFile = matchingResults[0].mazeFile;
 
-    const agg = aggregateResults(matchingResults);
+    const agg = aggregateForDetail(matchingResults);
 
     if (json) {
       const output = buildJsonOutput(model, maze, strategy, agg);
