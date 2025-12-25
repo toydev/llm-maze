@@ -44,22 +44,18 @@ export function createGoalwardMoveMap(maze: Maze): GoalwardMoveMap {
     const [x, y] = posKey.split(',').map(Number);
     const moves: Move[] = [];
 
-    // Up
     const upDist = distances.get(`${x},${y - 1}`);
     if (upDist !== undefined && upDist <= distance) {
       moves.push('up');
     }
-    // Down
     const downDist = distances.get(`${x},${y + 1}`);
     if (downDist !== undefined && downDist <= distance) {
       moves.push('down');
     }
-    // Left
     const leftDist = distances.get(`${x - 1},${y}`);
     if (leftDist !== undefined && leftDist <= distance) {
       moves.push('left');
     }
-    // Right
     const rightDist = distances.get(`${x + 1},${y}`);
     if (rightDist !== undefined && rightDist <= distance) {
       moves.push('right');
