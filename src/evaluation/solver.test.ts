@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Maze } from '@/maze/maze';
-import { createGoalwardMoveMap, createUnbiasedPathMap } from './solver';
+import { createGoalwardMoveMap, createPathMap } from './solver';
 
 describe('createGoalwardMoveMap', () => {
   it('returns moves that approach the goal', () => {
@@ -50,7 +50,7 @@ describe('createGoalwardMoveMap', () => {
   });
 });
 
-describe('createUnbiasedPathMap', () => {
+describe('createPathMap', () => {
   it('returns path from start to each position', () => {
     const layout = [
       '#####',
@@ -60,7 +60,7 @@ describe('createUnbiasedPathMap', () => {
       '#####',
     ];
     const maze = new Maze(layout);
-    const pathMap = createUnbiasedPathMap(maze);
+    const pathMap = createPathMap(maze, maze.startPosition);
 
     // Path to start itself
     expect(pathMap.get('1,1')).toEqual([{ x: 1, y: 1 }]);
@@ -71,7 +71,7 @@ describe('createUnbiasedPathMap', () => {
     expect(pathToGoal?.[pathToGoal.length - 1]).toEqual({ x: 3, y: 3 }); // ends at goal
   });
 
-  it('produces unbiased paths in open space', () => {
+  it('prioritizes axis with greater distance to goal', () => {
     const layout = [
       '#####',
       '#S  #',
@@ -80,7 +80,7 @@ describe('createUnbiasedPathMap', () => {
       '#####',
     ];
     const maze = new Maze(layout);
-    const pathMap = createUnbiasedPathMap(maze);
+    const pathMap = createPathMap(maze, maze.startPosition);
 
     const pathToGoal = pathMap.get('3,3')!;
     // Prioritizes axis with greater distance to reduce directional bias

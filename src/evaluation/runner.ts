@@ -2,7 +2,7 @@ import { ChatOllama } from '@langchain/ollama';
 import log from 'loglevel';
 
 import { EvaluationResult, MoveActionSchema, PositionResult } from '@/evaluation/result';
-import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/evaluation/solver';
+import { createGoalwardMoveMap, createPathMap } from '@/evaluation/solver';
 import { Maze, Position } from '@/maze/maze';
 import { PromptStrategy } from '@/prompt';
 
@@ -26,7 +26,7 @@ export async function runEvaluation(options: RunnerOptions): Promise<EvaluationR
 
   const maze = await Maze.fromFile(mazeFile);
   const goalwardMoveMap = createGoalwardMoveMap(maze);
-  const pathMap = createUnbiasedPathMap(maze);
+  const pathMap = createPathMap(maze, maze.startPosition);
 
   const llm = new ChatOllama({ model: modelName });
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);

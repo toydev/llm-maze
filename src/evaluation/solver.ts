@@ -73,14 +73,14 @@ export function createGoalwardMoveMap(maze: Maze): GoalwardMoveMap {
   return goalwardMoves;
 }
 
-export function createUnbiasedPathMap(maze: Maze): PathMap {
+export function createPathMap(maze: Maze, from: Position): PathMap {
   const pathMap: PathMap = new Map();
   const parentMap = new Map<string, Position | null>();
-  const queue: Position[] = [maze.startPosition];
-  const startKey = `${maze.startPosition.x},${maze.startPosition.y}`;
+  const queue: Position[] = [from];
+  const fromKey = `${from.x},${from.y}`;
   const end = maze.endPosition;
 
-  parentMap.set(startKey, null);
+  parentMap.set(fromKey, null);
 
   while (queue.length > 0) {
     const current = queue.shift()!;
