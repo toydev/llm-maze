@@ -1,6 +1,6 @@
 import { Maze } from '@/maze/maze';
 import { Position } from '@/maze/maze';
-import { Move } from '@/prompt/prompt-template';
+import { Move } from '@/prompt/template';
 
 type DistanceMap = Map<string, number>;
 export type PathMap = Map<string, Position[]>;

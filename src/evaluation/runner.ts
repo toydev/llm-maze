@@ -6,7 +6,7 @@ import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/evaluation/solve
 import { Maze } from '@/maze/maze';
 import { Position } from '@/maze/maze';
 import { PromptStrategy } from '@/prompt';
-import { MoveActionSchema } from '@/prompt/prompt-template';
+import { MoveActionSchema } from '@/prompt/template';
 
 export type ProgressCallback = (isCorrect: boolean) => void;
 
