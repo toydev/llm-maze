@@ -1,6 +1,6 @@
 import { defineCommand, runMain } from 'citty';
 
-import { formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/cli/view';
+import { type AccuracyData, type TimingData, formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/cli/view';
 import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
@@ -78,7 +78,7 @@ function printStatistics(agg: AggregatedStats): void {
   console.log(`Std Dev: ${formatDuration(stdDev)}`);
 }
 
-function toAccuracyData(agg: AggregatedStats): Map<string, { correct: number; total: number }> {
+function toAccuracyData(agg: AggregatedStats): AccuracyData {
   const data = new Map<string, { correct: number; total: number }>();
   for (const [key, stats] of agg.positionStats) {
     data.set(key, { correct: stats.correctCount, total: stats.totalCount });
@@ -86,7 +86,7 @@ function toAccuracyData(agg: AggregatedStats): Map<string, { correct: number; to
   return data;
 }
 
-function toTimingData(agg: AggregatedStats): Map<string, number> {
+function toTimingData(agg: AggregatedStats): TimingData {
   const data = new Map<string, number>();
   for (const [key, stats] of agg.positionStats) {
     if (stats.times.length > 0) {

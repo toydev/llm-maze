@@ -2,7 +2,7 @@ import path from 'path';
 
 import { defineCommand, runMain } from 'citty';
 
-import { formatDuration, renderAccuracyGrid } from '@/cli/view';
+import { type AccuracyData, formatDuration, renderAccuracyGrid } from '@/cli/view';
 import { EvaluationResult, loadResults } from '@/evaluation';
 import { createLogger } from '@/logger/Logger';
 import { Maze } from '@/maze/Maze';
@@ -115,7 +115,7 @@ function printSummaryTable(summary: Summary): void {
   });
 }
 
-function toAccuracyData(agg: AggregatedResult): Map<string, { correct: number; total: number }> {
+function toAccuracyData(agg: AggregatedResult): AccuracyData {
   const data = new Map<string, { correct: number; total: number }>();
   for (const [key, total] of agg.positionalTotalCounts) {
     const correct = agg.positionalCorrectCounts.get(key) ?? 0;
