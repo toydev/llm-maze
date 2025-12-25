@@ -1,7 +1,5 @@
+import { type AccuracyData, type TimingData } from '@/evaluation';
 import { colors, colorize, formatDuration } from '@/view/format';
-
-export type AccuracyData = Map<string, { correct: number; total: number }>;
-export type TimingData = Map<string, number>;
 
 function buildBaseGrid(layout: string[]): string[][] {
   return layout.map((row) => row.split('').map((char) => (char === '#' ? colorize('·', colors.gray) : char)));
