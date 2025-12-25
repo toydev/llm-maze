@@ -12,13 +12,17 @@ const LOG_MAX_FILE_SIZE = 10 * 1024 * 1024;
 const LOG_MAX_FILES = 10;
 
 let currentFileSize = 0;
+let initialized = false;
 
-if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
-}
-
-if (fs.existsSync(LOG_FILE)) {
-  currentFileSize = fs.statSync(LOG_FILE).size;
+function ensureInitialized(): void {
+  if (initialized) return;
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+  }
+  if (fs.existsSync(LOG_FILE)) {
+    currentFileSize = fs.statSync(LOG_FILE).size;
+  }
+  initialized = true;
 }
 
 function rotateLogFile(): void {
@@ -43,6 +47,7 @@ function rotateLogFile(): void {
 }
 
 function createLogger(logname: string): log.Logger {
+  ensureInitialized();
   const logger = log.getLogger(logname);
 
   if ((logger as any).__customized) {
