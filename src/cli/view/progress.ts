@@ -6,17 +6,19 @@ export type ProgressReporter = {
   finish: () => void;
 };
 
+const BAR_WIDTH = 20;
+
 export function createProgressReporter(total: number): ProgressReporter {
-  const chars: string[] = [];
   const startTime = Date.now();
   let intervalId: ReturnType<typeof setInterval> | null = null;
+  let completed = 0;
+  let correct = 0;
 
   const render = () => {
-    const remaining = ' '.repeat(total - chars.length);
     const elapsed = Date.now() - startTime;
-    const completed = chars.length;
-    const correct = chars.filter((c) => c === '.').length;
-    const incorrect = chars.filter((c) => c === 'X').length;
+    const progress = completed / total;
+    const filledWidth = Math.floor(progress * BAR_WIDTH);
+    const bar = '='.repeat(filledWidth) + (filledWidth < BAR_WIDTH ? '>' : '') + ' '.repeat(Math.max(0, BAR_WIDTH - filledWidth - 1));
 
     let eta = '--:--';
     if (completed > 0) {
@@ -25,7 +27,8 @@ export function createProgressReporter(total: number): ProgressReporter {
       eta = formatElapsed(remainingTime);
     }
 
-    process.stdout.write(`\r[${chars.join('')}${remaining}] ${completed}/${total} .:${correct} X:${incorrect} | ${formatElapsed(elapsed)} ETA: ${eta}`);
+    const incorrect = completed - correct;
+    process.stdout.write(`\r[${bar}] ${completed}/${total} .:${correct} X:${incorrect} | ${formatElapsed(elapsed)} ETA: ${eta}`);
   };
 
   intervalId = setInterval(render, 1000);
@@ -34,7 +37,8 @@ export function createProgressReporter(total: number): ProgressReporter {
   return {
     update: render,
     record: (success: boolean) => {
-      chars.push(success ? '.' : 'X');
+      completed++;
+      if (success) correct++;
       render();
     },
     finish: () => {
