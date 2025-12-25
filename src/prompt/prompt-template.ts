@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Position } from '@/maze/types';
+import { Position } from '@/maze/maze';
 
 // Move type definition for LLM interface
 export const MOVES = ['up', 'down', 'left', 'right'] as const;

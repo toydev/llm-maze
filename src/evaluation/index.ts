@@ -3,7 +3,7 @@ import path from 'path';
 
 import yaml from 'yaml';
 
-import { Position } from '@/maze/types';
+import { Position } from '@/maze/maze';
 import { Move } from '@/prompt/prompt-template';
 
 export type PositionResult = {

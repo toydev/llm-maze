@@ -9,7 +9,7 @@ import { EvaluationResult, PositionResult, saveResult } from '@/evaluation';
 import { createGoalwardMoveMap, createUnbiasedPathMap } from '@/evaluation/solver';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
-import { Position } from '@/maze/types';
+import { Position } from '@/maze/maze';
 import { PromptStrategy, SimplePromptStrategy, GraphPromptStrategy, MatrixPromptStrategy, ListPromptStrategy } from '@/prompt';
 import { MoveActionSchema } from '@/prompt/prompt-template';
 

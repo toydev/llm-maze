@@ -1,6 +1,16 @@
 import fs from 'fs/promises';
 
-import { Position, CellType } from '@/maze/types';
+export enum CellType {
+  Path = ' ',
+  Wall = '#',
+  Start = 'S',
+  End = 'E',
+}
+
+export interface Position {
+  x: number;
+  y: number;
+}
 
 export class Maze {
   private readonly grid: CellType[][];
