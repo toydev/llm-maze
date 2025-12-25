@@ -1,4 +1,4 @@
-import { defineCommand, runMain } from 'citty';
+import { program } from 'commander';
 
 import { loadResults, aggregateForDetail, calculateStats, toAccuracyDataFromDetail, toTimingData, type DetailAggregation } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
@@ -30,6 +30,58 @@ type JsonOutput = {
 };
 
 const logger = createLogger('detail');
+
+program
+  .name('detail')
+  .description('Show detailed analysis for specified conditions')
+  .argument('<model>', 'Model name')
+  .argument('<maze>', 'Maze name')
+  .argument('<strategy>', 'Strategy name')
+  .option('--json', 'Output in JSON format', false)
+  .action(async (model, maze, strategy, options) => {
+    const allResults = await loadResults();
+    if (allResults.length === 0) {
+      if (options.json) {
+        console.log(JSON.stringify({ error: 'No result files found' }));
+      } else {
+        logger.error('No result files found in output directory.');
+      }
+      return;
+    }
+
+    const matchingResults = allResults.filter((r) => r.modelName.includes(model) && r.mazeFile.includes(maze) && r.strategyName === strategy);
+
+    if (matchingResults.length === 0) {
+      if (options.json) {
+        console.log(JSON.stringify({ error: `No results found for: model=${model}, maze=${maze}, strategy=${strategy}` }));
+      } else {
+        logger.error(`No results found for: model=${model}, maze=${maze}, strategy=${strategy}`);
+      }
+      return;
+    }
+
+    const mazeFile = matchingResults[0].mazeFile;
+    const agg = aggregateForDetail(matchingResults);
+
+    if (options.json) {
+      const output = buildJsonOutput(model, maze, strategy, agg);
+      console.log(JSON.stringify(output, null, 2));
+      return;
+    }
+
+    console.log(`\n=== Detail Analysis ===`);
+    console.log(`Model: ${model}`);
+    console.log(`Maze: ${maze}`);
+    console.log(`Strategy: ${strategy}`);
+    console.log(`Files: ${matchingResults.length}`);
+
+    printStatistics(agg);
+    await printAccuracyGrid(mazeFile, agg);
+    await printTimingGrid(mazeFile, agg);
+    printPositionDetails(agg);
+  });
+
+program.parse();
 
 function printStatistics(agg: DetailAggregation): void {
   const { times, correctCount, totalCount } = agg.overallStats;
@@ -132,79 +184,3 @@ function buildJsonOutput(model: string, maze: string, strategy: string, agg: Det
     positions,
   };
 }
-
-const main = defineCommand({
-  meta: {
-    name: 'detail',
-    description: 'Show detailed analysis for specified conditions',
-  },
-  args: {
-    model: {
-      type: 'positional',
-      required: true,
-      description: 'Model name',
-    },
-    maze: {
-      type: 'positional',
-      required: true,
-      description: 'Maze name',
-    },
-    strategy: {
-      type: 'positional',
-      required: true,
-      description: 'Strategy name',
-    },
-    json: {
-      type: 'boolean',
-      default: false,
-      description: 'Output in JSON format',
-    },
-  },
-  async run({ args }) {
-    const { model, maze, strategy, json } = args;
-
-    const allResults = await loadResults();
-    if (allResults.length === 0) {
-      if (json) {
-        console.log(JSON.stringify({ error: 'No result files found' }));
-      } else {
-        logger.error('No result files found in output directory.');
-      }
-      return;
-    }
-
-    const matchingResults = allResults.filter((r) => r.modelName.includes(model) && r.mazeFile.includes(maze) && r.strategyName === strategy);
-
-    if (matchingResults.length === 0) {
-      if (json) {
-        console.log(JSON.stringify({ error: `No results found for: model=${model}, maze=${maze}, strategy=${strategy}` }));
-      } else {
-        logger.error(`No results found for: model=${model}, maze=${maze}, strategy=${strategy}`);
-      }
-      return;
-    }
-
-    const mazeFile = matchingResults[0].mazeFile;
-
-    const agg = aggregateForDetail(matchingResults);
-
-    if (json) {
-      const output = buildJsonOutput(model, maze, strategy, agg);
-      console.log(JSON.stringify(output, null, 2));
-      return;
-    }
-
-    console.log(`\n=== Detail Analysis ===`);
-    console.log(`Model: ${model}`);
-    console.log(`Maze: ${maze}`);
-    console.log(`Strategy: ${strategy}`);
-    console.log(`Files: ${matchingResults.length}`);
-
-    printStatistics(agg);
-    await printAccuracyGrid(mazeFile, agg);
-    await printTimingGrid(mazeFile, agg);
-    printPositionDetails(agg);
-  },
-});
-
-runMain(main);

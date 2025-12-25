@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@langchain/ollama": "^1.1.0",
-    "citty": "^0.1.6",
+    "commander": "^14.0.2",
     "loglevel": "^1.9.2",
     "yaml": "^2.8.2"
   },

@@ -1,12 +1,52 @@
 import path from 'path';
 
-import { defineCommand, runMain } from 'citty';
+import { program } from 'commander';
 
 import { loadResults, aggregateForSummary, toAccuracyDataFromSummary, type Summary } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { formatDuration, renderAccuracyGrid } from '@/view';
 
 const logger = createLogger('summary');
+
+program
+  .name('summary')
+  .description('Aggregate and display evaluation results')
+  .argument('[model]', 'Filter by model name', 'all')
+  .argument('[maze]', 'Filter by maze name', 'all')
+  .argument('[strategy]', 'Filter by strategy name', 'all')
+  .action(async (model, maze, strategy) => {
+    logger.info('Starting evaluation summary...');
+    let results = await loadResults();
+    if (results.length === 0) {
+      logger.warn('No result files found in output directory.');
+      return;
+    }
+
+    if (model.toLowerCase() !== 'all') {
+      results = results.filter((r) => r.modelName.includes(model));
+    }
+    if (maze.toLowerCase() !== 'all') {
+      results = results.filter((r) => r.mazeFile.includes(maze));
+    }
+    if (strategy.toLowerCase() !== 'all') {
+      results = results.filter((r) => r.strategyName === strategy);
+    }
+
+    if (results.length === 0) {
+      logger.warn('No results match the filter criteria.');
+      return;
+    }
+
+    const summary = await aggregateForSummary(results);
+
+    console.log('\n--- Overall Accuracy Summary ---');
+    printSummaryTable(summary);
+
+    console.log('\n--- Positional Accuracy Details ---');
+    printGridPerformance(summary);
+  });
+
+program.parse();
 
 function printSummaryTable(summary: Summary): void {
   const models = Array.from(summary.keys()).sort();
@@ -62,62 +102,3 @@ function printGridPerformance(summary: Summary): void {
     });
   });
 }
-
-const main = defineCommand({
-  meta: {
-    name: 'summary',
-    description: 'Aggregate and display evaluation results',
-  },
-  args: {
-    model: {
-      type: 'positional',
-      default: 'all',
-      description: 'Filter by model name (default: all)',
-    },
-    maze: {
-      type: 'positional',
-      default: 'all',
-      description: 'Filter by maze name (default: all)',
-    },
-    strategy: {
-      type: 'positional',
-      default: 'all',
-      description: 'Filter by strategy name (default: all)',
-    },
-  },
-  async run({ args }) {
-    const { model, maze, strategy } = args;
-
-    logger.info('Starting evaluation summary...');
-    let results = await loadResults();
-    if (results.length === 0) {
-      logger.warn('No result files found in output directory.');
-      return;
-    }
-
-    if (model.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.modelName.includes(model));
-    }
-    if (maze.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.mazeFile.includes(maze));
-    }
-    if (strategy.toLowerCase() !== 'all') {
-      results = results.filter((r) => r.strategyName === strategy);
-    }
-
-    if (results.length === 0) {
-      logger.warn('No results match the filter criteria.');
-      return;
-    }
-
-    const summary = await aggregateForSummary(results);
-
-    console.log('\n--- Overall Accuracy Summary ---');
-    printSummaryTable(summary);
-
-    console.log('\n--- Positional Accuracy Details ---');
-    printGridPerformance(summary);
-  },
-});
-
-runMain(main);
