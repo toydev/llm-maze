@@ -31,8 +31,8 @@ function createLogger(logname: string): log.Logger {
     return logger;
   }
 
-  logger.methodFactory = (methodName, _logLevel, loggerName) => {
-    return (...args: any[]) => {
+  logger.methodFactory = (methodName: log.LogLevelNames, _logLevel: log.LogLevelNumbers, loggerName: string | symbol): log.LoggingMethod => {
+    return (...args) => {
       try {
         const now = new Date();
         const timestamp = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().replace('T', ' ').split('.')[0];
