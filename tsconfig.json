@@ -13,10 +13,9 @@
     "isolatedModules": true,
     "incremental": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@test/*": ["./test/*"]
+      "@/*": ["./src/*"]
     },
-    "target": "ES2017"
+    "target": "ESNext"
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules"]
