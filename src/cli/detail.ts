@@ -5,6 +5,30 @@ import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
 import { formatDuration, renderAccuracyGrid, renderTimingGrid } from '@/view';
 
+type JsonOutput = {
+  model: string;
+  maze: string;
+  strategy: string;
+  trials: number;
+  accuracy: number;
+  totalPositions: number;
+  correctCount: number;
+  avgTimeMs: number;
+  medianTimeMs: number;
+  minTimeMs: number;
+  maxTimeMs: number;
+  stdDevMs: number;
+  positions: {
+    x: number;
+    y: number;
+    accuracy: number;
+    avgTimeMs: number;
+    minTimeMs: number;
+    maxTimeMs: number;
+    stdDevMs: number;
+  }[];
+};
+
 const logger = createLogger('detail');
 
 function printStatistics(agg: DetailAggregation): void {
@@ -69,30 +93,6 @@ function printPositionDetails(agg: DetailAggregation): void {
     console.log(`${pos}${acc}${avgTime}${min}${max}${stdDev}`);
   }
 }
-
-type JsonOutput = {
-  model: string;
-  maze: string;
-  strategy: string;
-  trials: number;
-  accuracy: number;
-  totalPositions: number;
-  correctCount: number;
-  avgTimeMs: number;
-  medianTimeMs: number;
-  minTimeMs: number;
-  maxTimeMs: number;
-  stdDevMs: number;
-  positions: {
-    x: number;
-    y: number;
-    accuracy: number;
-    avgTimeMs: number;
-    minTimeMs: number;
-    maxTimeMs: number;
-    stdDevMs: number;
-  }[];
-};
 
 function buildJsonOutput(model: string, maze: string, strategy: string, agg: DetailAggregation): JsonOutput {
   const { times, correctCount, totalCount } = agg.overallStats;
