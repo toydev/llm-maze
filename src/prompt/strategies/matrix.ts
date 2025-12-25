@@ -1,6 +1,6 @@
 import { Maze, CellType, Position } from '@/maze/maze';
 import { PromptStrategy } from '@/prompt/strategy';
-import { COORDINATE_SYSTEM_NOTE, MATRIX_INDEXING_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/template';
+import { COORDINATE_SYSTEM_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/template';
 
 export class MatrixPromptStrategy implements PromptStrategy {
   private generateMatrix(maze: Maze): number[][] {
@@ -41,7 +41,7 @@ ${formatVisitHistory(history)}
 
 What is your next move from your current position?
 
-${COORDINATE_SYSTEM_NOTE} ${MATRIX_INDEXING_NOTE}
+${COORDINATE_SYSTEM_NOTE} Matrix indexing is [y][x].
 
 ${RESPONSE_FORMAT_INSTRUCTION}
 `;

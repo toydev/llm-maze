@@ -5,8 +5,6 @@ export const COORDINATE_SYSTEM_NOTE = `Note: In this coordinate system, y increa
 - left: x-1
 - right: x+1`;
 
-export const MATRIX_INDEXING_NOTE = 'Matrix indexing is [y][x].';
-
 export const RESPONSE_FORMAT_INSTRUCTION = `Return your answer as a JSON object with a "move" key, which can be one of "up", "down", "left", or "right".
 Example: {"move": "up"}`;
 
