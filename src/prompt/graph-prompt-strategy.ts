@@ -1,6 +1,6 @@
-import { Maze } from '@/maze/Maze';
+import { Maze } from '@/maze/maze';
 import { Position } from '@/maze/types';
-import { PromptStrategy } from '@/prompt/PromptStrategy';
+import { PromptStrategy } from '@/prompt/prompt-strategy';
 import { COORDINATE_SYSTEM_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/promptTemplate';
 
 type AdjacencyList = Record<string, string[]>;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Maze } from '@/maze/Maze';
+import { Maze } from '@/maze/maze';
 import { createGoalwardMoveMap, createUnbiasedPathMap } from './solver';
 
 describe('createGoalwardMoveMap', () => {

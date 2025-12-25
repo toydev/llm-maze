@@ -1,4 +1,4 @@
-import { Maze } from '@/maze/Maze';
+import { Maze } from '@/maze/maze';
 import { Position } from '@/maze/types';
 import { Move } from '@/prompt/promptTemplate';
 

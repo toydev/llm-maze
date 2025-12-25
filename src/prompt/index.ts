@@ -1,5 +1,5 @@
-export type { PromptStrategy } from '@/prompt/PromptStrategy';
-export { SimplePromptStrategy } from '@/prompt/SimplePromptStrategy';
-export { GraphPromptStrategy } from '@/prompt/GraphPromptStrategy';
-export { MatrixPromptStrategy } from '@/prompt/MatrixPromptStrategy';
-export { ListPromptStrategy } from '@/prompt/ListPromptStrategy';
+export type { PromptStrategy } from '@/prompt/prompt-strategy';
+export { SimplePromptStrategy } from '@/prompt/simple-prompt-strategy';
+export { GraphPromptStrategy } from '@/prompt/graph-prompt-strategy';
+export { MatrixPromptStrategy } from '@/prompt/matrix-prompt-strategy';
+export { ListPromptStrategy } from '@/prompt/list-prompt-strategy';
