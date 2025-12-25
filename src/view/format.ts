@@ -1,16 +1,3 @@
-export const colors = {
-  cyan: '\x1b[36m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-  gray: '\x1b[90m',
-  reset: '\x1b[0m',
-};
-
-export function colorize(text: string, color: string): string {
-  return `${color}${text}${colors.reset}`;
-}
-
 /** Format duration for statistics display: 123ms / 1.2s / 1m30s */
 export function formatDuration(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
