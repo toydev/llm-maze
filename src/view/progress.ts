@@ -28,7 +28,7 @@ export function createProgressReporter(total: number): ProgressReporter {
     }
 
     const incorrect = completed - correct;
-    process.stdout.write(`\r[${bar}] ${completed}/${total} .:${correct} X:${incorrect} | ${formatElapsed(elapsed)} ETA: ${eta}`);
+    process.stdout.write(`\r[${bar}] ${completed}/${total} OK:${correct} NG:${incorrect} | ${formatElapsed(elapsed)} ETA: ${eta}`);
   };
 
   intervalId = setInterval(render, 1000);
