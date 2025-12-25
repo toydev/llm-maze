@@ -21,13 +21,10 @@ export function renderAccuracyGrid(layout: string[], data: AccuracyData, indent 
 
   const grid = buildBaseGrid(layout);
 
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < layout[y].length; x++) {
-      const key = `${x},${y}`;
-      const stats = data.get(key);
-      if (stats && stats.total > 0) {
-        grid[y][x] = getAccuracyDisplay(stats.correct / stats.total);
-      }
+  for (const [key, stats] of data) {
+    if (stats.total > 0) {
+      const [x, y] = key.split(',').map(Number);
+      grid[y][x] = getAccuracyDisplay(stats.correct / stats.total);
     }
   }
 
@@ -62,13 +59,9 @@ export function renderTimingGrid(layout: string[], data: TimingData, trials: num
 
   const grid = buildBaseGrid(layout);
 
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < layout[y].length; x++) {
-      const key = `${x},${y}`;
-      if (data.has(key)) {
-        grid[y][x] = getTimingDisplay(data.get(key)!);
-      }
-    }
+  for (const [key, time] of data) {
+    const [x, y] = key.split(',').map(Number);
+    grid[y][x] = getTimingDisplay(time);
   }
 
   console.log(grid.map((row) => indent + row.join('')).join('\n'));
