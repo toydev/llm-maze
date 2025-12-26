@@ -4,7 +4,7 @@ import { ChatOllama } from '@langchain/ollama';
 import { program } from 'commander';
 
 import { Evaluations } from '@/evaluation';
-import { MoveActionSchema, type Evaluation, type Trial } from '@/evaluation/result';
+import { MoveActionSchema, toMove, type Evaluation, type Trial } from '@/evaluation/result';
 import { createLogger } from '@/logger/logger';
 import { Maze, Mazes, type Position } from '@/maze';
 import { Strategies, type PromptStrategy } from '@/prompt';
@@ -88,7 +88,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
       if (!maze.isTraversable({ x, y })) continue;
 
       const currentPos: Position = { x, y };
-      const correctMoves = maze.getGoalwardMoves(currentPos);
+      const correctMoves = maze.getGoalwardDirections(currentPos).map(toMove);
       const correctMoveSet = new Set(correctMoves);
 
       const history = maze.getPathFromStart(currentPos);

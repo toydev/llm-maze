@@ -1,7 +1,5 @@
 import fs from 'fs/promises';
 
-import type { Move } from '@/evaluation/result';
-
 export enum CellType {
   Path = ' ',
   Wall = '#',
@@ -12,6 +10,11 @@ export enum CellType {
 export interface Position {
   x: number;
   y: number;
+}
+
+export interface Direction {
+  dx: number;
+  dy: number;
 }
 
 type DistanceMap = Map<string, number>;
@@ -124,7 +127,7 @@ export class Maze {
     return distances;
   }
 
-  public getGoalwardMoves(position: Position): Move[] {
+  public getGoalwardDirections(position: Position): Direction[] {
     if (!this.distancesToGoal) {
       this.distancesToGoal = this.calculateDistancesToGoal();
     }
@@ -135,26 +138,26 @@ export class Maze {
       return [];
     }
 
-    const moves: Move[] = [];
+    const directions: Direction[] = [];
 
     const upDist = this.distancesToGoal.get(`${position.x},${position.y - 1}`);
     if (upDist !== undefined && upDist < distance) {
-      moves.push('up');
+      directions.push({ dx: 0, dy: -1 });
     }
     const downDist = this.distancesToGoal.get(`${position.x},${position.y + 1}`);
     if (downDist !== undefined && downDist < distance) {
-      moves.push('down');
+      directions.push({ dx: 0, dy: 1 });
     }
     const leftDist = this.distancesToGoal.get(`${position.x - 1},${position.y}`);
     if (leftDist !== undefined && leftDist < distance) {
-      moves.push('left');
+      directions.push({ dx: -1, dy: 0 });
     }
     const rightDist = this.distancesToGoal.get(`${position.x + 1},${position.y}`);
     if (rightDist !== undefined && rightDist < distance) {
-      moves.push('right');
+      directions.push({ dx: 1, dy: 0 });
     }
 
-    return moves;
+    return directions;
   }
 
   private calculatePathsFromStart(): Map<string, Position[]> {

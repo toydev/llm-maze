@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { Maze } from '@/maze/maze';
+import { Maze, type Direction } from '@/maze/maze';
 
-describe('Maze.getGoalwardMoves', () => {
-  it('returns moves that approach the goal', () => {
+const DOWN: Direction = { dx: 0, dy: 1 };
+const RIGHT: Direction = { dx: 1, dy: 0 };
+
+describe('Maze.getGoalwardDirections', () => {
+  it('returns directions that approach the goal', () => {
     const layout = [
       '#####',
       '#S  #',
@@ -17,14 +20,14 @@ describe('Maze.getGoalwardMoves', () => {
     // (1,2)=3,        , (3,2)=1
     // (1,3)=2, (2,3)=1, (3,3)=0
 
-    expect(maze.getGoalwardMoves({ x: 1, y: 1 }).sort()).toEqual(['down', 'right']);
-    expect(maze.getGoalwardMoves({ x: 2, y: 1 })).toEqual(['right']);
-    expect(maze.getGoalwardMoves({ x: 3, y: 1 })).toEqual(['down']);
-    expect(maze.getGoalwardMoves({ x: 1, y: 2 })).toEqual(['down']);
-    expect(maze.getGoalwardMoves({ x: 3, y: 2 })).toEqual(['down']);
-    expect(maze.getGoalwardMoves({ x: 1, y: 3 })).toEqual(['right']);
-    expect(maze.getGoalwardMoves({ x: 2, y: 3 })).toEqual(['right']);
-    expect(maze.getGoalwardMoves({ x: 3, y: 3 })).toEqual([]);
+    expect(maze.getGoalwardDirections({ x: 1, y: 1 })).toEqual(expect.arrayContaining([DOWN, RIGHT]));
+    expect(maze.getGoalwardDirections({ x: 2, y: 1 })).toEqual([RIGHT]);
+    expect(maze.getGoalwardDirections({ x: 3, y: 1 })).toEqual([DOWN]);
+    expect(maze.getGoalwardDirections({ x: 1, y: 2 })).toEqual([DOWN]);
+    expect(maze.getGoalwardDirections({ x: 3, y: 2 })).toEqual([DOWN]);
+    expect(maze.getGoalwardDirections({ x: 1, y: 3 })).toEqual([RIGHT]);
+    expect(maze.getGoalwardDirections({ x: 2, y: 3 })).toEqual([RIGHT]);
+    expect(maze.getGoalwardDirections({ x: 3, y: 3 })).toEqual([]);
   });
 
   it('allows lateral moves that maintain distance', () => {
@@ -42,8 +45,8 @@ describe('Maze.getGoalwardMoves', () => {
     // (1,2)=3, (2,2)=2, (3,2)=1
     // (1,3)=2, (2,3)=1, (3,3)=0
 
-    expect(maze.getGoalwardMoves({ x: 2, y: 2 }).sort()).toEqual(['down', 'right']);
-    expect(maze.getGoalwardMoves({ x: 1, y: 2 }).sort()).toEqual(['down', 'right']);
+    expect(maze.getGoalwardDirections({ x: 2, y: 2 })).toEqual(expect.arrayContaining([DOWN, RIGHT]));
+    expect(maze.getGoalwardDirections({ x: 1, y: 2 })).toEqual(expect.arrayContaining([DOWN, RIGHT]));
   });
 });
 
