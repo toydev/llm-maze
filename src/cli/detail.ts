@@ -1,5 +1,6 @@
 import { program } from 'commander';
 import prettyMs from 'pretty-ms';
+import { mean, median, standardDeviation } from 'simple-statistics';
 
 import { Evaluations, PositionStats } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
@@ -83,21 +84,6 @@ program
 
 program.parse();
 
-function avg(arr: number[]): number {
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function median(arr: number[]): number {
-  const sorted = [...arr].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
-}
-
-function stdDev(arr: number[]): number {
-  const mean = avg(arr);
-  const variance = arr.reduce((acc, t) => acc + (t - mean) ** 2, 0) / arr.length;
-  return Math.sqrt(variance);
-}
-
 function printStatistics(stats: PositionStats): void {
   const { times, correct, total } = stats.overallStats();
   if (times.length === 0) {
@@ -112,11 +98,11 @@ function printStatistics(stats: PositionStats): void {
   console.log(`Total positions: ${total} (${total / stats.trialCount} per trial)`);
   console.log(`Correct: ${correct}/${total} (${accuracy.toFixed(1)}%)`);
   console.log(`Total time: ${prettyMs(sum)}`);
-  console.log(`Average: ${prettyMs(avg(times))}`);
+  console.log(`Average: ${prettyMs(mean(times))}`);
   console.log(`Median: ${prettyMs(median(times))}`);
   console.log(`Min: ${prettyMs(Math.min(...times))}`);
   console.log(`Max: ${prettyMs(Math.max(...times))}`);
-  console.log(`Std Dev: ${prettyMs(stdDev(times))}`);
+  console.log(`Std Dev: ${prettyMs(standardDeviation(times))}`);
 }
 
 async function printAccuracyGrid(mazeFile: string, stats: PositionStats): Promise<void> {
@@ -142,11 +128,11 @@ function printPositionDetails(stats: PositionStats): void {
     if (posData.times.length > 0) {
       entries.push({
         key,
-        avgTime: avg(posData.times),
+        avgTime: mean(posData.times),
         accuracy: posData.correct / posData.total,
         min: Math.min(...posData.times),
         max: Math.max(...posData.times),
-        stdDev: stdDev(posData.times),
+        stdDev: standardDeviation(posData.times),
       });
     }
   }
@@ -176,10 +162,10 @@ function buildJsonOutput(model: string, maze: string, strategy: string, stats: P
         x,
         y,
         accuracy: posData.correct / posData.total,
-        avgTimeMs: Math.round(avg(posData.times)),
+        avgTimeMs: Math.round(mean(posData.times)),
         minTimeMs: Math.min(...posData.times),
         maxTimeMs: Math.max(...posData.times),
-        stdDevMs: Math.round(stdDev(posData.times)),
+        stdDevMs: Math.round(standardDeviation(posData.times)),
       });
     }
   }
@@ -193,11 +179,11 @@ function buildJsonOutput(model: string, maze: string, strategy: string, stats: P
     accuracy: (correct / total) * 100,
     totalPositions: total / stats.trialCount,
     correctCount: correct,
-    avgTimeMs: Math.round(avg(times)),
+    avgTimeMs: Math.round(mean(times)),
     medianTimeMs: Math.round(median(times)),
     minTimeMs: Math.min(...times),
     maxTimeMs: Math.max(...times),
-    stdDevMs: Math.round(stdDev(times)),
+    stdDevMs: Math.round(standardDeviation(times)),
     positions,
   };
 }
