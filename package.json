@@ -23,8 +23,6 @@
     "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.28.5",
-    "@babel/preset-typescript": "^7.28.5",
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.1",
     "@types/node": "^22",
