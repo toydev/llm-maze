@@ -1,7 +1,7 @@
 import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 
-import { Evaluations, PositionStats, calculateStats } from '@/evaluation';
+import { Evaluations, PositionStats } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze';
 import { renderAccuracyGrid, renderTimingGrid } from '@/view';
@@ -83,6 +83,21 @@ program
 
 program.parse();
 
+function avg(arr: number[]): number {
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function median(arr: number[]): number {
+  const sorted = [...arr].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+function stdDev(arr: number[]): number {
+  const mean = avg(arr);
+  const variance = arr.reduce((acc, t) => acc + (t - mean) ** 2, 0) / arr.length;
+  return Math.sqrt(variance);
+}
+
 function printStatistics(stats: PositionStats): void {
   const { times, correct, total } = stats.overallStats();
   if (times.length === 0) {
@@ -90,7 +105,6 @@ function printStatistics(stats: PositionStats): void {
     return;
   }
 
-  const { avg, median, min, max, stdDev } = calculateStats(times);
   const sum = times.reduce((a, b) => a + b, 0);
   const accuracy = (correct / total) * 100;
 
@@ -98,11 +112,11 @@ function printStatistics(stats: PositionStats): void {
   console.log(`Total positions: ${total} (${total / stats.trialCount} per trial)`);
   console.log(`Correct: ${correct}/${total} (${accuracy.toFixed(1)}%)`);
   console.log(`Total time: ${prettyMs(sum)}`);
-  console.log(`Average: ${prettyMs(avg)}`);
-  console.log(`Median: ${prettyMs(median)}`);
-  console.log(`Min: ${prettyMs(min)}`);
-  console.log(`Max: ${prettyMs(max)}`);
-  console.log(`Std Dev: ${prettyMs(stdDev)}`);
+  console.log(`Average: ${prettyMs(avg(times))}`);
+  console.log(`Median: ${prettyMs(median(times))}`);
+  console.log(`Min: ${prettyMs(Math.min(...times))}`);
+  console.log(`Max: ${prettyMs(Math.max(...times))}`);
+  console.log(`Std Dev: ${prettyMs(stdDev(times))}`);
 }
 
 async function printAccuracyGrid(mazeFile: string, stats: PositionStats): Promise<void> {
@@ -126,9 +140,14 @@ function printPositionDetails(stats: PositionStats): void {
 
   for (const [key, posData] of stats.entries()) {
     if (posData.times.length > 0) {
-      const { avg, min, max, stdDev } = calculateStats(posData.times);
-      const accuracy = posData.correct / posData.total;
-      entries.push({ key, avgTime: avg, accuracy, min, max, stdDev });
+      entries.push({
+        key,
+        avgTime: avg(posData.times),
+        accuracy: posData.correct / posData.total,
+        min: Math.min(...posData.times),
+        max: Math.max(...posData.times),
+        stdDev: stdDev(posData.times),
+      });
     }
   }
 
@@ -141,28 +160,26 @@ function printPositionDetails(stats: PositionStats): void {
     const avgTime = prettyMs(entry.avgTime).padEnd(12);
     const min = prettyMs(entry.min).padEnd(10);
     const max = prettyMs(entry.max).padEnd(10);
-    const stdDev = prettyMs(entry.stdDev).padEnd(10);
-    console.log(`${pos}${acc}${avgTime}${min}${max}${stdDev}`);
+    const std = prettyMs(entry.stdDev).padEnd(10);
+    console.log(`${pos}${acc}${avgTime}${min}${max}${std}`);
   }
 }
 
 function buildJsonOutput(model: string, maze: string, strategy: string, stats: PositionStats): JsonOutput {
   const { times, correct, total } = stats.overallStats();
-  const { avg, median, min, max, stdDev } = calculateStats(times);
 
   const positions: JsonOutput['positions'] = [];
   for (const [key, posData] of stats.entries()) {
     if (posData.times.length > 0) {
       const [x, y] = key.split(',').map(Number);
-      const posStats = calculateStats(posData.times);
       positions.push({
         x,
         y,
         accuracy: posData.correct / posData.total,
-        avgTimeMs: Math.round(posStats.avg),
-        minTimeMs: posStats.min,
-        maxTimeMs: posStats.max,
-        stdDevMs: Math.round(posStats.stdDev),
+        avgTimeMs: Math.round(avg(posData.times)),
+        minTimeMs: Math.min(...posData.times),
+        maxTimeMs: Math.max(...posData.times),
+        stdDevMs: Math.round(stdDev(posData.times)),
       });
     }
   }
@@ -176,11 +193,11 @@ function buildJsonOutput(model: string, maze: string, strategy: string, stats: P
     accuracy: (correct / total) * 100,
     totalPositions: total / stats.trialCount,
     correctCount: correct,
-    avgTimeMs: Math.round(avg),
-    medianTimeMs: Math.round(median),
-    minTimeMs: min,
-    maxTimeMs: max,
-    stdDevMs: Math.round(stdDev),
+    avgTimeMs: Math.round(avg(times)),
+    medianTimeMs: Math.round(median(times)),
+    minTimeMs: Math.min(...times),
+    maxTimeMs: Math.max(...times),
+    stdDevMs: Math.round(stdDev(times)),
     positions,
   };
 }
