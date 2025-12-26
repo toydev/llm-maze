@@ -48,9 +48,9 @@ The maze is represented as a graph data structure (adjacency list).
 Each key is a "node" representing a walkable coordinate "x,y".
 The value is an array of "edges" to adjacent walkable coordinates.
 
-- Start position: "(${maze.startPosition.x},${maze.startPosition.y})"
-- Goal position: "(${maze.goalPosition.x},${maze.goalPosition.y})"
-- Your current position: "(${currentPosition.x},${currentPosition.y})"
+- Start position: "${maze.startPosition.x},${maze.startPosition.y}"
+- Goal position: "${maze.goalPosition.x},${maze.goalPosition.y}"
+- Your current position: "${currentPosition.x},${currentPosition.y}"
 
 Maze Graph:
 ${graphString}
