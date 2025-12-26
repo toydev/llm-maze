@@ -3,9 +3,14 @@ import path from 'path';
 import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 
-import { Evaluations, aggregateForSummary, toAccuracyDataFromSummary, type Summary } from '@/evaluation';
+import { Evaluations, PositionStats, type Evaluation } from '@/evaluation';
 import { createLogger } from '@/logger/logger';
+import { Maze } from '@/maze';
 import { renderAccuracyGrid } from '@/view';
+
+type MazeStats = { mazeFile: string; stats: PositionStats };
+type StrategyMap = Map<string, MazeStats[]>;
+type ModelMap = Map<string, StrategyMap>;
 
 const logger = createLogger('summary');
 
@@ -30,18 +35,45 @@ program
       return;
     }
 
-    const summary = await aggregateForSummary(evaluations);
+    const summary = groupEvaluations(evaluations);
 
     console.log('\n--- Overall Accuracy Summary ---');
     printSummaryTable(summary);
 
     console.log('\n--- Positional Accuracy Details ---');
-    printGridPerformance(summary);
+    await printGridPerformance(summary);
   });
 
 program.parse();
 
-function printSummaryTable(summary: Summary): void {
+function groupEvaluations(evaluations: Evaluation[]): ModelMap {
+  const summary: ModelMap = new Map();
+
+  for (const evaluation of evaluations) {
+    const { modelName: model, strategyName: strategy, mazeFile } = evaluation;
+
+    if (!summary.has(model)) {
+      summary.set(model, new Map());
+    }
+    const modelMap = summary.get(model)!;
+
+    if (!modelMap.has(strategy)) {
+      modelMap.set(strategy, []);
+    }
+    const mazeList = modelMap.get(strategy)!;
+
+    let mazeStats = mazeList.find((m) => m.mazeFile === mazeFile);
+    if (!mazeStats) {
+      mazeStats = { mazeFile, stats: new PositionStats() };
+      mazeList.push(mazeStats);
+    }
+    mazeStats.stats.addEvaluation(evaluation);
+  }
+
+  return summary;
+}
+
+function printSummaryTable(summary: ModelMap): void {
   const models = Array.from(summary.keys()).sort();
   const allStrategies = new Set<string>();
   summary.forEach((modelMap) => modelMap.forEach((_, strategy) => allStrategies.add(strategy)));
@@ -55,15 +87,16 @@ function printSummaryTable(summary: Summary): void {
     let row = model.padEnd(25);
     const modelMap = summary.get(model)!;
     strategies.forEach((stg) => {
-      const strategyMap = modelMap.get(stg);
-      if (strategyMap) {
+      const mazeList = modelMap.get(stg);
+      if (mazeList) {
         let totalCorrect = 0;
         let totalPositions = 0;
         let totalTimeMs = 0;
-        strategyMap.forEach((agg) => {
-          totalCorrect += agg.totalCorrectMoves;
-          totalPositions += agg.totalPositions;
-          totalTimeMs += agg.totalTimeMs;
+        mazeList.forEach(({ stats }) => {
+          const overall = stats.overallStats();
+          totalCorrect += overall.correct;
+          totalPositions += overall.total;
+          totalTimeMs += overall.times.reduce((a, b) => a + b, 0);
         });
         const overallAccuracy = totalPositions > 0 ? (totalCorrect / totalPositions) * 100 : 0;
         const avgTimePerPos = totalPositions > 0 ? totalTimeMs / totalPositions : 0;
@@ -76,22 +109,22 @@ function printSummaryTable(summary: Summary): void {
   });
 }
 
-function printGridPerformance(summary: Summary): void {
+async function printGridPerformance(summary: ModelMap): Promise<void> {
   const models = Array.from(summary.keys()).sort();
-  models.forEach((model) => {
+  for (const model of models) {
     console.log(`\n=== ${model} ===`);
     const modelMap = summary.get(model)!;
     const strategies = Array.from(modelMap.keys()).sort();
-    strategies.forEach((stg) => {
+    for (const stg of strategies) {
       console.log(`\n  --- ${stg} ---`);
-      const strategyMap = modelMap.get(stg)!;
-      const mazeFiles = Array.from(strategyMap.keys()).sort();
-      mazeFiles.forEach((mazeFile) => {
-        const agg = strategyMap.get(mazeFile)!;
+      const mazeList = modelMap.get(stg)!;
+      const sortedMazes = [...mazeList].sort((a, b) => a.mazeFile.localeCompare(b.mazeFile));
+      for (const { mazeFile, stats } of sortedMazes) {
         const mazeName = path.basename(mazeFile, '.txt');
+        const maze = await Maze.fromFile(mazeFile);
         console.log(`\n    ${mazeName}:`);
-        renderAccuracyGrid(agg.mazeLayout, toAccuracyDataFromSummary(agg), '    ');
-      });
-    });
-  });
+        renderAccuracyGrid(maze.layout, stats.toAccuracyData(), '    ');
+      }
+    }
+  }
 }
