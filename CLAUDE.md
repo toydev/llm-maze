@@ -42,9 +42,11 @@
 
 | コマンド | 説明 |
 |----------|------|
-| `npm run execute <model> [maze] [strategy]` | LLM実行・結果保存 |
-| `npm run summary [model] [maze] [strategy]` | 全体統計を表示 |
-| `npm run detail <model> <maze> <strategy>` | マス毎の詳細分析 |
+| `npm run execute -- -m <model> [-z maze] [-s strategy]` | LLM実行・結果保存 |
+| `npm run summary -- [-m model] [-z maze] [-s strategy]` | 全体統計を表示 |
+| `npm run detail -- [-m model] [-z maze] [-s strategy]` | マス毎の詳細分析 |
+
+オプション省略時は全件対象。
 
 ## 公開時の注意
 
