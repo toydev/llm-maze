@@ -2,8 +2,8 @@ import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 import { mean, median, standardDeviation } from 'simple-statistics';
 
-import { Evaluations } from '@/evaluation/evaluations';
-import { PositionStats } from '@/evaluation/position-stats';
+import { Executions } from '@/execution/execution';
+import { PositionStats } from '@/execution/position-stats';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
 import { renderAccuracyGrid, renderTimingGrid } from '@/view/grid';
@@ -43,21 +43,21 @@ program
   .option('--json', 'Output in JSON format', false)
   .action(async (options) => {
     const { model, maze, strategy } = options;
-    const evaluations = await Evaluations.find({ model, maze, strategy });
+    const executions = await Executions.find({ model, maze, strategy });
 
-    if (evaluations.length === 0) {
+    if (executions.length === 0) {
       if (options.json) {
-        console.log(JSON.stringify({ error: `No evaluations found for: model=${model}, maze=${maze}, strategy=${strategy}` }));
+        console.log(JSON.stringify({ error: `No executions found for: model=${model}, maze=${maze}, strategy=${strategy}` }));
       } else {
-        logger.error(`No evaluations found for: model=${model}, maze=${maze}, strategy=${strategy}`);
+        logger.error(`No executions found for: model=${model}, maze=${maze}, strategy=${strategy}`);
       }
       return;
     }
 
-    const mazeFile = evaluations[0].mazeFile;
+    const mazeFile = executions[0].mazeFile;
     const stats = new PositionStats();
-    for (const e of evaluations) {
-      stats.addEvaluation(e);
+    for (const e of executions) {
+      stats.addExecution(e);
     }
 
     if (options.json) {
@@ -70,7 +70,7 @@ program
     console.log(`Model: ${model}`);
     console.log(`Maze: ${maze}`);
     console.log(`Strategy: ${strategy}`);
-    console.log(`Files: ${evaluations.length}`);
+    console.log(`Files: ${executions.length}`);
 
     printStatistics(stats);
     await printAccuracyGrid(mazeFile, stats);

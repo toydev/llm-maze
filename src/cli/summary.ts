@@ -3,9 +3,8 @@ import path from 'path';
 import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 
-import { Evaluations } from '@/evaluation/evaluations';
-import { PositionStats } from '@/evaluation/position-stats';
-import { type Evaluation } from '@/evaluation/result';
+import { Executions, type Execution } from '@/execution/execution';
+import { PositionStats } from '@/execution/position-stats';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
 import { renderAccuracyGrid } from '@/view/grid';
@@ -18,20 +17,20 @@ const logger = createLogger('summary');
 
 program
   .name('summary')
-  .description('Aggregate and display evaluation results')
+  .description('Aggregate and display execution results')
   .option('-m, --model <name>', 'Filter by model name')
   .option('-z, --maze <pattern>', 'Filter by maze name')
   .option('-s, --strategy <name>', 'Filter by strategy name')
   .action(async (options) => {
-    logger.info('Starting evaluation summary...');
+    logger.info('Starting execution summary...');
 
-    const evaluations = await Evaluations.find({ model: options.model, maze: options.maze, strategy: options.strategy });
-    if (evaluations.length === 0) {
-      logger.warn('No evaluations found.');
+    const executions = await Executions.find({ model: options.model, maze: options.maze, strategy: options.strategy });
+    if (executions.length === 0) {
+      logger.warn('No executions found.');
       return;
     }
 
-    const summary = groupEvaluations(evaluations);
+    const summary = groupExecutions(executions);
 
     console.log('\n--- Overall Accuracy Summary ---');
     printSummaryTable(summary);
@@ -42,11 +41,11 @@ program
 
 program.parse();
 
-function groupEvaluations(evaluations: Evaluation[]): ModelMap {
+function groupExecutions(executions: Execution[]): ModelMap {
   const summary: ModelMap = new Map();
 
-  for (const evaluation of evaluations) {
-    const { modelName: model, strategyName: strategy, mazeFile } = evaluation;
+  for (const execution of executions) {
+    const { modelName: model, strategyName: strategy, mazeFile } = execution;
 
     if (!summary.has(model)) {
       summary.set(model, new Map());
@@ -63,7 +62,7 @@ function groupEvaluations(evaluations: Evaluation[]): ModelMap {
       mazeStats = { mazeFile, stats: new PositionStats() };
       mazeList.push(mazeStats);
     }
-    mazeStats.stats.addEvaluation(evaluation);
+    mazeStats.stats.addExecution(execution);
   }
 
   return summary;

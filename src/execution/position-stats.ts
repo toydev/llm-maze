@@ -1,4 +1,4 @@
-import type { Evaluation, Trial } from '@/evaluation/result';
+import type { CellResult, Execution } from '@/execution/execution';
 
 export type AccuracyData = Map<string, { correct: number; total: number }>;
 export type TimingData = Map<string, number>;
@@ -9,25 +9,25 @@ export class PositionStats {
   private positions = new Map<string, PositionData>();
   private _trialCount = 0;
 
-  addTrial(trial: Trial): this {
-    const key = `${trial.position.x},${trial.position.y}`;
+  addCellResult(cellResult: CellResult): this {
+    const key = `${cellResult.position.x},${cellResult.position.y}`;
     if (!this.positions.has(key)) {
       this.positions.set(key, { correct: 0, total: 0, times: [] });
     }
     const data = this.positions.get(key)!;
-    if (trial.isCorrect) {
+    if (cellResult.isCorrect) {
       data.correct++;
     }
     data.total++;
-    if (trial.timeMs !== undefined) {
-      data.times.push(trial.timeMs);
+    if (cellResult.timeMs !== undefined) {
+      data.times.push(cellResult.timeMs);
     }
     return this;
   }
 
-  addEvaluation(evaluation: Evaluation): this {
-    for (const trial of evaluation.trials) {
-      this.addTrial(trial);
+  addExecution(execution: Execution): this {
+    for (const cellResult of execution.cellResults) {
+      this.addCellResult(cellResult);
     }
     this._trialCount++;
     return this;

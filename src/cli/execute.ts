@@ -3,8 +3,7 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { program } from 'commander';
 
-import { Evaluations } from '@/evaluation/evaluations';
-import { MoveActionSchema, toMove, type Evaluation, type Trial } from '@/evaluation/result';
+import { Executions, MoveActionSchema, toMove, type CellResult, type Execution } from '@/execution/execution';
 import { createLogger } from '@/logger/logger';
 import { Maze, type Position } from '@/maze/maze';
 import { Mazes } from '@/maze/mazes';
@@ -24,12 +23,12 @@ program
   .option('--no-warmup', 'Skip warmup (for external API services)')
   .action(async (options) => {
     if (options.warmup) await warmupLLM(options.model);
-    await runAllEvaluations(options.model, options.times, await Mazes.find(options.maze), Strategies.find(options.strategy));
+    await runAllExecutions(options.model, options.times, await Mazes.find(options.maze), Strategies.find(options.strategy));
   });
 
 program.parse();
 
-async function runAllEvaluations(model: string, times: number, mazeFiles: string[], strategies: [string, PromptStrategy][]): Promise<void> {
+async function runAllExecutions(model: string, times: number, mazeFiles: string[], strategies: [string, PromptStrategy][]): Promise<void> {
   logger.info(`Model: ${model}`);
   logger.info(`Mazes: ${mazeFiles.join(', ')}`);
   logger.info(`Strategies: ${strategies.map(([name]) => name).join(', ')}`);
@@ -38,13 +37,13 @@ async function runAllEvaluations(model: string, times: number, mazeFiles: string
   for (let i = 0; i < times; i++) {
     for (const mazeFile of mazeFiles) {
       for (const [strategyName, strategy] of strategies) {
-        await runSingleEvaluation(model, mazeFile, strategyName, strategy, i + 1, times);
+        await runSingleExecution(model, mazeFile, strategyName, strategy, i + 1, times);
       }
     }
   }
 }
 
-async function runSingleEvaluation(
+async function runSingleExecution(
   model: string,
   mazeFile: string,
   strategyName: string,
@@ -57,24 +56,23 @@ async function runSingleEvaluation(
   process.stdout.write(`\n${runInfo}\n`);
 
   try {
-    const evaluation = await runEvaluation(mazeFile, strategyName, strategy, model);
-    const savedPath = await Evaluations.save(evaluation);
+    const execution = await runExecution(mazeFile, strategyName, strategy, model);
+    const savedPath = await Executions.save(execution);
     logger.info(`Saved: ${savedPath}`);
   } catch (error) {
     logger.error(`Failed: ${runInfo}`, error);
   }
 }
 
-async function runEvaluation(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<Evaluation> {
+async function runExecution(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<Execution> {
   const maze = await Maze.fromFile(mazeFile);
   const llm = new ChatOllama({ model });
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
-  const trials: Trial[] = [];
+  const cellResults: CellResult[] = [];
   let totalPositions = 0;
   const startTime = Date.now();
 
-  // Count total passable positions for progress reporting
   for (let y = 0; y < maze.height; y++) {
     for (let x = 0; x < maze.width; x++) {
       if (maze.isTraversable({ x, y })) {
@@ -102,7 +100,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
         const llmMove = llmResponse.move;
         const isCorrect = correctMoveSet.has(llmMove);
 
-        trials.push({
+        cellResults.push({
           position: currentPos,
           isCorrect,
           llmMove,
@@ -113,7 +111,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
         progress.record(isCorrect);
       } catch (error) {
         logger.error(`[${x},${y}] Error during LLM invocation:`, error);
-        trials.push({
+        cellResults.push({
           position: currentPos,
           isCorrect: false,
           llmMove: null,
@@ -128,7 +126,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
 
   progress.finish();
 
-  const correctMoves = trials.filter((t) => t.isCorrect).length;
+  const correctMoves = cellResults.filter((r) => r.isCorrect).length;
   const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
   const totalTimeMs = Date.now() - startTime;
 
@@ -141,7 +139,7 @@ async function runEvaluation(mazeFile: string, strategyName: string, strategy: P
     accuracy,
     totalTimeMs,
     averageTimePerPositionMs: totalPositions > 0 ? totalTimeMs / totalPositions : 0,
-    trials,
+    cellResults,
   };
 }
 
