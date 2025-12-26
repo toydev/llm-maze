@@ -19,8 +19,8 @@ export class SimplePromptStrategy implements PromptStrategy {
     const mazeString = this.renderMaze(maze, currentPosition);
 
     return `
-You are a bot in a 2D maze. Your goal is to find the path from 'S' to 'E'.
-'S' is the start, 'E' is the end, '#' are walls, and ' ' are walkable paths.
+You are a bot in a 2D maze. Your goal is to find the path from 'S' (Start) to 'G' (Goal).
+'S' is the start, 'G' is the goal, '#' are walls, and ' ' are walkable paths.
 'C' is your current position.
 
 Maze:
