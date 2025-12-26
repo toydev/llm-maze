@@ -22,14 +22,14 @@ export class ListPromptStrategy implements PromptStrategy {
     const walkableList = this.generateWalkableList(maze);
 
     return `
-You are a bot in a 2D maze. Your goal is to find the path from Start to End.
+You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
 
 Walkable positions in the maze:
 ${JSON.stringify(walkableList)}
 
 Positions:
 - Start: (${maze.startPosition.x},${maze.startPosition.y})
-- End: (${maze.endPosition.x},${maze.endPosition.y})
+- Goal: (${maze.goalPosition.x},${maze.goalPosition.y})
 - Current: (${currentPosition.x},${currentPosition.y})
 
 ${formatVisitHistory(history)}

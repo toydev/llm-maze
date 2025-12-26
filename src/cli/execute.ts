@@ -5,7 +5,6 @@ import { program } from 'commander';
 
 import { Evaluations } from '@/evaluation';
 import { MoveActionSchema, type Evaluation, type Trial } from '@/evaluation/result';
-import { createGoalwardMoveMap, createPathMap } from '@/evaluation/solver';
 import { createLogger } from '@/logger/logger';
 import { Maze, Mazes, type Position } from '@/maze';
 import { Strategies, type PromptStrategy } from '@/prompt';
@@ -66,58 +65,68 @@ async function runSingleEvaluation(
 
 async function runEvaluation(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<Evaluation> {
   const maze = await Maze.fromFile(mazeFile);
-  const goalwardMoveMap = createGoalwardMoveMap(maze);
-  const pathMap = createPathMap(maze, maze.startPosition);
-
   const llm = new ChatOllama({ model });
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
-  const evaluationPositions = Array.from(goalwardMoveMap.keys());
   const trials: Trial[] = [];
-  const progress = new ProgressReporter(evaluationPositions.length);
+  let totalPositions = 0;
   const startTime = Date.now();
 
-  for (const posKey of evaluationPositions) {
-    const [x, y] = posKey.split(',').map(Number);
-    const currentPos: Position = { x, y };
-    const correctMoveSet = new Set(goalwardMoveMap.get(posKey)!);
+  // Count total passable positions for progress reporting
+  for (let y = 0; y < maze.height; y++) {
+    for (let x = 0; x < maze.width; x++) {
+      if (maze.isTraversable({ x, y })) {
+        totalPositions++;
+      }
+    }
+  }
 
-    const history = pathMap.get(posKey) ?? [currentPos];
-    const prompt = strategy.build(maze, history);
+  const progress = new ProgressReporter(totalPositions);
 
-    const posStartTime = Date.now();
-    try {
-      const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
-      const llmMove = llmResponse.move;
-      const isCorrect = correctMoveSet.has(llmMove);
+  for (let y = 0; y < maze.height; y++) {
+    for (let x = 0; x < maze.width; x++) {
+      if (!maze.isTraversable({ x, y })) continue;
 
-      trials.push({
-        position: currentPos,
-        isCorrect,
-        llmMove,
-        validMoves: Array.from(correctMoveSet),
-        timeMs: Date.now() - posStartTime,
-      });
+      const currentPos: Position = { x, y };
+      const correctMoves = maze.getGoalwardMoves(currentPos);
+      const correctMoveSet = new Set(correctMoves);
 
-      progress.record(isCorrect);
-    } catch (error) {
-      logger.error(`[${posKey}] Error during LLM invocation:`, error);
-      trials.push({
-        position: currentPos,
-        isCorrect: false,
-        llmMove: null,
-        validMoves: Array.from(correctMoveSet),
-        timeMs: Date.now() - posStartTime,
-      });
+      const history = maze.getPathFromStart(currentPos);
+      const prompt = strategy.build(maze, history);
 
-      progress.record(false);
+      const posStartTime = Date.now();
+      try {
+        const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
+        const llmMove = llmResponse.move;
+        const isCorrect = correctMoveSet.has(llmMove);
+
+        trials.push({
+          position: currentPos,
+          isCorrect,
+          llmMove,
+          validMoves: correctMoves,
+          timeMs: Date.now() - posStartTime,
+        });
+
+        progress.record(isCorrect);
+      } catch (error) {
+        logger.error(`[${x},${y}] Error during LLM invocation:`, error);
+        trials.push({
+          position: currentPos,
+          isCorrect: false,
+          llmMove: null,
+          validMoves: correctMoves,
+          timeMs: Date.now() - posStartTime,
+        });
+
+        progress.record(false);
+      }
     }
   }
 
   progress.finish();
 
   const correctMoves = trials.filter((t) => t.isCorrect).length;
-  const totalPositions = evaluationPositions.length;
   const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
   const totalTimeMs = Date.now() - startTime;
 
