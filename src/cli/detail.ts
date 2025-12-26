@@ -32,6 +32,8 @@ type JsonOutput = {
 
 const logger = createLogger('detail');
 
+const normalize = (value: string) => (value.toLowerCase() === 'all' ? undefined : value);
+
 program
   .name('detail')
   .description('Show detailed analysis for specified conditions')
@@ -40,7 +42,11 @@ program
   .argument('<strategy>', 'Strategy name')
   .option('--json', 'Output in JSON format', false)
   .action(async (model, maze, strategy, options) => {
-    const evaluations = await Evaluations.find({ model, maze, strategy });
+    const evaluations = await Evaluations.find({
+      model: normalize(model),
+      maze: normalize(maze),
+      strategy: normalize(strategy),
+    });
 
     if (evaluations.length === 0) {
       if (options.json) {

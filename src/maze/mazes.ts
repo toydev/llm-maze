@@ -14,9 +14,6 @@ export class Mazes {
   }
 
   static async find(pattern: string): Promise<string[]> {
-    if (pattern.toLowerCase() === 'all') {
-      return this.all();
-    }
     const all = await this.all();
     const matched = all.filter((file) => file.includes(pattern));
     if (matched.length === 0) {

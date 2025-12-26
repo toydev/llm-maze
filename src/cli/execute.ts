@@ -12,6 +12,8 @@ import { ProgressReporter } from '@/view';
 
 const logger = createLogger('execute');
 
+const isAll = (value: string) => value.toLowerCase() === 'all';
+
 program
   .name('execute')
   .description('Evaluate LLM maze-solving ability')
@@ -22,7 +24,8 @@ program
   .option('--no-warmup', 'Skip warmup (for external API services)')
   .action(async (model, maze, strategy, options) => {
     if (options.warmup) await warmupLLM(model);
-    await runAllEvaluations(model, options.times, await Mazes.find(maze), Strategies.find(strategy));
+    const mazeFiles = isAll(maze) ? await Mazes.all() : await Mazes.find(maze);
+    await runAllEvaluations(model, options.times, mazeFiles, Strategies.find(strategy));
   });
 
 program.parse();

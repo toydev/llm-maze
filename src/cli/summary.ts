@@ -9,6 +9,8 @@ import { renderAccuracyGrid } from '@/view';
 
 const logger = createLogger('summary');
 
+const normalize = (value: string) => (value.toLowerCase() === 'all' ? undefined : value);
+
 program
   .name('summary')
   .description('Aggregate and display evaluation results')
@@ -18,7 +20,11 @@ program
   .action(async (model, maze, strategy) => {
     logger.info('Starting evaluation summary...');
 
-    const evaluations = await Evaluations.find({ model, maze, strategy });
+    const evaluations = await Evaluations.find({
+      model: normalize(model),
+      maze: normalize(maze),
+      strategy: normalize(strategy),
+    });
     if (evaluations.length === 0) {
       logger.warn('No evaluations found.');
       return;

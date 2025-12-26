@@ -27,13 +27,13 @@ export class Evaluations {
   static async find(filter: EvaluationFilter): Promise<Evaluation[]> {
     let evaluations = await this.all();
 
-    if (filter.model && filter.model.toLowerCase() !== 'all') {
+    if (filter.model) {
       evaluations = evaluations.filter((e) => e.modelName.includes(filter.model!));
     }
-    if (filter.maze && filter.maze.toLowerCase() !== 'all') {
+    if (filter.maze) {
       evaluations = evaluations.filter((e) => e.mazeFile.includes(filter.maze!));
     }
-    if (filter.strategy && filter.strategy.toLowerCase() !== 'all') {
+    if (filter.strategy) {
       evaluations = evaluations.filter((e) => e.strategyName === filter.strategy);
     }
 
