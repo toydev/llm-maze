@@ -3,10 +3,12 @@ import path from 'path';
 import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 
-import { Evaluations, PositionStats, type Evaluation } from '@/evaluation';
+import { Evaluations } from '@/evaluation/evaluations';
+import { PositionStats } from '@/evaluation/position-stats';
+import { type Evaluation } from '@/evaluation/result';
 import { createLogger } from '@/logger/logger';
-import { Maze } from '@/maze';
-import { renderAccuracyGrid } from '@/view';
+import { Maze } from '@/maze/maze';
+import { renderAccuracyGrid } from '@/view/grid';
 
 type MazeStats = { mazeFile: string; stats: PositionStats };
 type StrategyMap = Map<string, MazeStats[]>;

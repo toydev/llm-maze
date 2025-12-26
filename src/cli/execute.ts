@@ -3,12 +3,14 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { program } from 'commander';
 
-import { Evaluations } from '@/evaluation';
+import { Evaluations } from '@/evaluation/evaluations';
 import { MoveActionSchema, toMove, type Evaluation, type Trial } from '@/evaluation/result';
 import { createLogger } from '@/logger/logger';
-import { Maze, Mazes, type Position } from '@/maze';
-import { Strategies, type PromptStrategy } from '@/prompt';
-import { ProgressReporter } from '@/view';
+import { Maze, type Position } from '@/maze/maze';
+import { Mazes } from '@/maze/mazes';
+import { Strategies } from '@/prompt/strategies';
+import { type PromptStrategy } from '@/prompt/strategy';
+import { ProgressReporter } from '@/view/progress';
 
 const logger = createLogger('execute');
 

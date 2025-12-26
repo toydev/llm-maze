@@ -1,7 +1,7 @@
 import pc from 'picocolors';
 import prettyMs from 'pretty-ms';
 
-import { type AccuracyData, type TimingData } from '@/evaluation';
+import { type AccuracyData, type TimingData } from '@/evaluation/position-stats';
 
 function buildBaseGrid(layout: string[]): string[][] {
   return layout.map((row) => row.split('').map((char) => (char === '#' ? pc.gray('·') : char)));

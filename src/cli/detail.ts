@@ -2,10 +2,11 @@ import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 import { mean, median, standardDeviation } from 'simple-statistics';
 
-import { Evaluations, PositionStats } from '@/evaluation';
+import { Evaluations } from '@/evaluation/evaluations';
+import { PositionStats } from '@/evaluation/position-stats';
 import { createLogger } from '@/logger/logger';
-import { Maze } from '@/maze';
-import { renderAccuracyGrid, renderTimingGrid } from '@/view';
+import { Maze } from '@/maze/maze';
+import { renderAccuracyGrid, renderTimingGrid } from '@/view/grid';
 
 type JsonOutput = {
   model: string;
