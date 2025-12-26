@@ -14,22 +14,16 @@ type ModelMap = Map<string, StrategyMap>;
 
 const logger = createLogger('summary');
 
-const normalize = (value: string) => (value.toLowerCase() === 'all' ? undefined : value);
-
 program
   .name('summary')
   .description('Aggregate and display evaluation results')
-  .argument('[model]', 'Filter by model name', 'all')
-  .argument('[maze]', 'Filter by maze name', 'all')
-  .argument('[strategy]', 'Filter by strategy name', 'all')
-  .action(async (model, maze, strategy) => {
+  .option('-m, --model <name>', 'Filter by model name')
+  .option('-z, --maze <pattern>', 'Filter by maze name')
+  .option('-s, --strategy <name>', 'Filter by strategy name')
+  .action(async (options) => {
     logger.info('Starting evaluation summary...');
 
-    const evaluations = await Evaluations.find({
-      model: normalize(model),
-      maze: normalize(maze),
-      strategy: normalize(strategy),
-    });
+    const evaluations = await Evaluations.find({ model: options.model, maze: options.maze, strategy: options.strategy });
     if (evaluations.length === 0) {
       logger.warn('No evaluations found.');
       return;

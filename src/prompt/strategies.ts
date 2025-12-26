@@ -16,10 +16,8 @@ export class Strategies {
     return Array.from(registry.entries());
   }
 
-  static find(pattern: string): [string, PromptStrategy][] {
-    if (pattern.toLowerCase() === 'all') {
-      return this.all();
-    }
+  static find(pattern?: string): [string, PromptStrategy][] {
+    if (!pattern) return this.all();
     const strategy = registry.get(pattern);
     if (!strategy) {
       throw new Error(`Unknown strategy: ${pattern}. Available: ${this.names().join(', ')}`);

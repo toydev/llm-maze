@@ -12,20 +12,17 @@ import { ProgressReporter } from '@/view';
 
 const logger = createLogger('execute');
 
-const isAll = (value: string) => value.toLowerCase() === 'all';
-
 program
   .name('execute')
   .description('Evaluate LLM maze-solving ability')
-  .argument('<model>', 'Ollama model name (e.g., gpt-oss, gemma3:latest)')
-  .argument('[maze]', 'Maze file path or "all"', 'all')
-  .argument('[strategy]', `Strategy name or "all". Available: ${Strategies.names().join(', ')}`, 'all')
+  .requiredOption('-m, --model <name>', 'Ollama model name (e.g., gpt-oss, gemma3:latest)')
+  .option('-z, --maze <pattern>', 'Maze file pattern (omit for all)')
+  .option('-s, --strategy <name>', `Strategy name. Available: ${Strategies.names().join(', ')}`)
   .option('-t, --times <number>', 'Number of runs per combination', parseInt, 1)
   .option('--no-warmup', 'Skip warmup (for external API services)')
-  .action(async (model, maze, strategy, options) => {
-    if (options.warmup) await warmupLLM(model);
-    const mazeFiles = isAll(maze) ? await Mazes.all() : await Mazes.find(maze);
-    await runAllEvaluations(model, options.times, mazeFiles, Strategies.find(strategy));
+  .action(async (options) => {
+    if (options.warmup) await warmupLLM(options.model);
+    await runAllEvaluations(options.model, options.times, await Mazes.find(options.maze), Strategies.find(options.strategy));
   });
 
 program.parse();

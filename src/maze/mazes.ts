@@ -13,8 +13,9 @@ export class Mazes {
     return mazeFiles;
   }
 
-  static async find(pattern: string): Promise<string[]> {
+  static async find(pattern?: string): Promise<string[]> {
     const all = await this.all();
+    if (!pattern) return all;
     const matched = all.filter((file) => file.includes(pattern));
     if (matched.length === 0) {
       throw new Error(`No maze files found matching: ${pattern}`);

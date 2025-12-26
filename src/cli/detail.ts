@@ -33,21 +33,16 @@ type JsonOutput = {
 
 const logger = createLogger('detail');
 
-const normalize = (value: string) => (value.toLowerCase() === 'all' ? undefined : value);
-
 program
   .name('detail')
   .description('Show detailed analysis for specified conditions')
-  .argument('<model>', 'Model name')
-  .argument('<maze>', 'Maze name')
-  .argument('<strategy>', 'Strategy name')
+  .option('-m, --model <name>', 'Filter by model name')
+  .option('-z, --maze <pattern>', 'Filter by maze name')
+  .option('-s, --strategy <name>', 'Filter by strategy name')
   .option('--json', 'Output in JSON format', false)
-  .action(async (model, maze, strategy, options) => {
-    const evaluations = await Evaluations.find({
-      model: normalize(model),
-      maze: normalize(maze),
-      strategy: normalize(strategy),
-    });
+  .action(async (options) => {
+    const { model, maze, strategy } = options;
+    const evaluations = await Evaluations.find({ model, maze, strategy });
 
     if (evaluations.length === 0) {
       if (options.json) {
