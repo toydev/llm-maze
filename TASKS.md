@@ -5,8 +5,8 @@
 ### 1.1 戦略の選定
 - [x] 既存結果の確認: matrix-embed, matrix-sep の gpt-oss 結果を分析
 - [x] embed/sep の違い → sepの方が正解率・速度ともに良い
-- [x] 実験対象: **simple, list, graph, matrix-sep** の4戦略
-  - matrix-embedは除外（sepより劣る）
+- [x] 実験対象: **simple, list, graph, matrix** の4戦略
+  - matrix-embedは除外（sepより劣る）→ 残ったsepを「matrix」に統一
 
 ### 1.2 迷路の設計
 目的（2D空間認識の評価）に対して最適な迷路を検討する。
@@ -36,7 +36,7 @@
   | corridor/spiral | - | - | ○ | ○ |
   - 5x5: 内部3x3、empty/straight以外は構造破綻
   - 7x7: 内部5x5、pass/detourは窮屈、loop/spiralは不可
-  - 15x15: listは全形状、simple/matrix-sep/graphはopen/empty + spiralのみ
+  - 15x15: listは全形状、simple/matrix/graphはopen/empty + spiralのみ
 - [x] 最終的な迷路セットの決定・作成（22種: 5x5×2, 7x7×4, 11x11×8, 15x15×8）
 
 ### 1.3 その他パラメータ
@@ -51,12 +51,12 @@
   | 戦略 | 回数 | サイズ上限 | 目的 |
   |------|------|-----------|------|
   | simple | 2 (有無各1) | 〜11x11 | 遅さの証明 |
-  | matrix-sep | 2 (有無各1) | 〜11x11 | 遅さの証明 |
+  | matrix | 2 (有無各1) | 〜11x11 | 遅さの証明 |
   | list | 5 (有無各1+残3分配) | 〜15x15 | 精度検証（主力） |
   | graph | 5 (有無各1+残3分配) | 〜7x7 | 精度検証（サイズ制限） |
 - 15x15の方針:
   - list: 速い・現実的なら全形状やる
-  - simple/matrix-sep/graph: open/empty + spiral のみ（「無理」確認でスキップ可）
+  - simple/matrix/graph: open/empty + spiral のみ（「無理」確認でスキップ可）
 - 総見積もり: 約60-80h（2.5-3日）
 
 ## フェーズ2: 実験前の準備（実験に影響する部分）
@@ -106,7 +106,7 @@
 
 | 項目 | 選択肢 | 決定 |
 |------|--------|------|
-| 戦略数 | 4 | simple, list, graph, matrix-sep |
+| 戦略数 | 4 | simple, list, graph, matrix |
 | graph の上限サイズ | 7x7 | 決定 |
 | history | 有無両方 | 各1回ずつ |
 | 試行回数 | 5 | history有無で分配 |
