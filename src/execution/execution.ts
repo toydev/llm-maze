@@ -34,11 +34,11 @@ export type Execution = {
   mazeFile: string;
   modelName: string;
   strategyName: string;
-  totalPositions: number;
+  totalCells: number;
   correctMoves: number;
   accuracy: number;
   totalTimeMs: number;
-  averageTimePerPositionMs: number;
+  averageTimePerCellMs: number;
   cellResults: CellResult[];
 };
 

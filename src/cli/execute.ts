@@ -3,7 +3,7 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { program } from 'commander';
 
-import { Executions, MoveActionSchema, toMove, type CellResult, type Execution } from '@/execution/execution';
+import { Executions, MoveActionSchema, toMove, type CellResult, type Execution, type Move } from '@/execution/execution';
 import { createLogger } from '@/logger/logger';
 import { Maze, type Position } from '@/maze/maze';
 import { Mazes } from '@/maze/mazes';
@@ -69,76 +69,55 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
   const llm = new ChatOllama({ model });
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
+  const cells = maze.getWalkableCells();
+  const cellCount = cells.length;
   const cellResults: CellResult[] = [];
-  let totalPositions = 0;
   const startTime = Date.now();
+  const progress = new ProgressReporter(cellCount);
 
-  for (let y = 0; y < maze.height; y++) {
-    for (let x = 0; x < maze.width; x++) {
-      if (maze.isTraversable({ x, y })) {
-        totalPositions++;
-      }
+  for (const cell of cells) {
+    const correctMoves = maze.getGoalwardDirections(cell).map(toMove);
+    const correctMoveSet = new Set(correctMoves);
+    const history = maze.getPathFromStart(cell);
+    const prompt = strategy.build(maze, history);
+
+    const cellStartTime = Date.now();
+    let llmMove: Move | null = null;
+
+    try {
+      const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
+      llmMove = llmResponse.move;
+    } catch (error) {
+      logger.error(`[${cell.x},${cell.y}] Error during LLM invocation:`, error);
     }
-  }
 
-  const progress = new ProgressReporter(totalPositions);
+    const isCorrect = llmMove !== null && correctMoveSet.has(llmMove);
 
-  for (let y = 0; y < maze.height; y++) {
-    for (let x = 0; x < maze.width; x++) {
-      if (!maze.isTraversable({ x, y })) continue;
+    cellResults.push({
+      position: cell,
+      isCorrect,
+      llmMove,
+      validMoves: correctMoves,
+      timeMs: Date.now() - cellStartTime,
+    });
 
-      const currentPos: Position = { x, y };
-      const correctMoves = maze.getGoalwardDirections(currentPos).map(toMove);
-      const correctMoveSet = new Set(correctMoves);
-
-      const history = maze.getPathFromStart(currentPos);
-      const prompt = strategy.build(maze, history);
-
-      const posStartTime = Date.now();
-      try {
-        const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
-        const llmMove = llmResponse.move;
-        const isCorrect = correctMoveSet.has(llmMove);
-
-        cellResults.push({
-          position: currentPos,
-          isCorrect,
-          llmMove,
-          validMoves: correctMoves,
-          timeMs: Date.now() - posStartTime,
-        });
-
-        progress.record(isCorrect);
-      } catch (error) {
-        logger.error(`[${x},${y}] Error during LLM invocation:`, error);
-        cellResults.push({
-          position: currentPos,
-          isCorrect: false,
-          llmMove: null,
-          validMoves: correctMoves,
-          timeMs: Date.now() - posStartTime,
-        });
-
-        progress.record(false);
-      }
-    }
+    progress.record(isCorrect);
   }
 
   progress.finish();
 
-  const correctMoves = cellResults.filter((r) => r.isCorrect).length;
-  const accuracy = totalPositions > 0 ? (correctMoves / totalPositions) * 100 : 0;
+  const correctCount = cellResults.filter((r) => r.isCorrect).length;
   const totalTimeMs = Date.now() - startTime;
 
   return {
     mazeFile: mazeFile.replace(/\\/g, '/'),
     modelName: model,
     strategyName,
-    totalPositions,
-    correctMoves,
-    accuracy,
+    totalCells: cellCount,
+    correctMoves: correctCount,
+    accuracy: cellCount > 0 ? (correctCount / cellCount) * 100 : 0,
     totalTimeMs,
-    averageTimePerPositionMs: totalPositions > 0 ? totalTimeMs / totalPositions : 0,
+    averageTimePerCellMs: cellCount > 0 ? totalTimeMs / cellCount : 0,
     cellResults,
   };
 }

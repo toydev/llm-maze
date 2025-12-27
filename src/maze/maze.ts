@@ -91,9 +91,21 @@ export class Maze {
     return this.grid[position.y][position.x];
   }
 
-  public isTraversable(position: Position): boolean {
+  public isWalkable(position: Position): boolean {
     const cellType = this.getCellType(position);
     return cellType !== undefined && cellType !== CellType.Wall;
+  }
+
+  public getWalkableCells(): Position[] {
+    const cells: Position[] = [];
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.isWalkable({ x, y })) {
+          cells.push({ x, y });
+        }
+      }
+    }
+    return cells;
   }
 
   private calculateDistancesToGoal(): DistanceMap {
@@ -117,7 +129,7 @@ export class Maze {
 
       for (const neighbor of neighbors) {
         const neighborKey = `${neighbor.x},${neighbor.y}`;
-        if (this.isTraversable(neighbor) && !distances.has(neighborKey)) {
+        if (this.isWalkable(neighbor) && !distances.has(neighborKey)) {
           distances.set(neighborKey, currentDistance + 1);
           queue.push(neighbor);
         }
@@ -192,7 +204,7 @@ export class Maze {
 
       for (const neighbor of neighbors) {
         const neighborKey = `${neighbor.x},${neighbor.y}`;
-        if (this.isTraversable(neighbor) && !parentMap.has(neighborKey)) {
+        if (this.isWalkable(neighbor) && !parentMap.has(neighborKey)) {
           parentMap.set(neighborKey, current);
           queue.push(neighbor);
         }

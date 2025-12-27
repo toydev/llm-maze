@@ -12,7 +12,7 @@ export class GraphPromptStrategy implements PromptStrategy {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const currentPos = { x, y };
-        if (!maze.isTraversable(currentPos)) {
+        if (!maze.isWalkable(currentPos)) {
           continue;
         }
 
@@ -27,7 +27,7 @@ export class GraphPromptStrategy implements PromptStrategy {
         ];
 
         for (const neighbor of neighbors) {
-          if (maze.isTraversable(neighbor)) {
+          if (maze.isWalkable(neighbor)) {
             graph[posKey].push(`${neighbor.x},${neighbor.y}`);
           }
         }

@@ -3,13 +3,13 @@ import path from 'path';
 import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 
+import { CellStats } from '@/execution/cell-stats';
 import { Executions, type Execution } from '@/execution/execution';
-import { PositionStats } from '@/execution/position-stats';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
 import { renderAccuracyGrid } from '@/view/grid';
 
-type MazeStats = { mazeFile: string; stats: PositionStats };
+type MazeStats = { mazeFile: string; stats: CellStats };
 type StrategyMap = Map<string, MazeStats[]>;
 type ModelMap = Map<string, StrategyMap>;
 
@@ -35,7 +35,7 @@ program
     console.log('\n--- Overall Accuracy Summary ---');
     printSummaryTable(summary);
 
-    console.log('\n--- Positional Accuracy Details ---');
+    console.log('\n--- Cell Accuracy Details ---');
     await printGridPerformance(summary);
   });
 
@@ -59,7 +59,7 @@ function groupExecutions(executions: Execution[]): ModelMap {
 
     let mazeStats = mazeList.find((m) => m.mazeFile === mazeFile);
     if (!mazeStats) {
-      mazeStats = { mazeFile, stats: new PositionStats() };
+      mazeStats = { mazeFile, stats: new CellStats() };
       mazeList.push(mazeStats);
     }
     mazeStats.stats.addExecution(execution);
@@ -85,17 +85,17 @@ function printSummaryTable(summary: ModelMap): void {
       const mazeList = modelMap.get(stg);
       if (mazeList) {
         let totalCorrect = 0;
-        let totalPositions = 0;
+        let totalCells = 0;
         let totalTimeMs = 0;
         mazeList.forEach(({ stats }) => {
           const overall = stats.overallStats();
           totalCorrect += overall.correct;
-          totalPositions += overall.total;
+          totalCells += overall.total;
           totalTimeMs += overall.times.reduce((a, b) => a + b, 0);
         });
-        const overallAccuracy = totalPositions > 0 ? (totalCorrect / totalPositions) * 100 : 0;
-        const avgTimePerPos = totalPositions > 0 ? totalTimeMs / totalPositions : 0;
-        row += `${overallAccuracy.toFixed(1)}% (${prettyMs(avgTimePerPos)}/pos)`.padEnd(25);
+        const overallAccuracy = totalCells > 0 ? (totalCorrect / totalCells) * 100 : 0;
+        const avgTimePerCell = totalCells > 0 ? totalTimeMs / totalCells : 0;
+        row += `${overallAccuracy.toFixed(1)}% (${prettyMs(avgTimePerCell)}/cell)`.padEnd(25);
       } else {
         row += 'N/A'.padEnd(25);
       }

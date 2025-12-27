@@ -3,18 +3,18 @@ import type { CellResult, Execution } from '@/execution/execution';
 export type AccuracyData = Map<string, { correct: number; total: number }>;
 export type TimingData = Map<string, number>;
 
-type PositionData = { correct: number; total: number; times: number[] };
+type CellData = { correct: number; total: number; times: number[] };
 
-export class PositionStats {
-  private positions = new Map<string, PositionData>();
+export class CellStats {
+  private cells = new Map<string, CellData>();
   private _trialCount = 0;
 
   addCellResult(cellResult: CellResult): this {
     const key = `${cellResult.position.x},${cellResult.position.y}`;
-    if (!this.positions.has(key)) {
-      this.positions.set(key, { correct: 0, total: 0, times: [] });
+    if (!this.cells.has(key)) {
+      this.cells.set(key, { correct: 0, total: 0, times: [] });
     }
-    const data = this.positions.get(key)!;
+    const data = this.cells.get(key)!;
     if (cellResult.isCorrect) {
       data.correct++;
     }
@@ -33,12 +33,12 @@ export class PositionStats {
     return this;
   }
 
-  merge(other: PositionStats): this {
-    for (const [key, otherData] of other.positions) {
-      if (!this.positions.has(key)) {
-        this.positions.set(key, { correct: 0, total: 0, times: [] });
+  merge(other: CellStats): this {
+    for (const [key, otherData] of other.cells) {
+      if (!this.cells.has(key)) {
+        this.cells.set(key, { correct: 0, total: 0, times: [] });
       }
-      const data = this.positions.get(key)!;
+      const data = this.cells.get(key)!;
       data.correct += otherData.correct;
       data.total += otherData.total;
       data.times.push(...otherData.times);
@@ -51,19 +51,19 @@ export class PositionStats {
     return this._trialCount;
   }
 
-  positionAt(key: string): PositionData | undefined {
-    return this.positions.get(key);
+  cellAt(key: string): CellData | undefined {
+    return this.cells.get(key);
   }
 
-  entries(): IterableIterator<[string, PositionData]> {
-    return this.positions.entries();
+  entries(): IterableIterator<[string, CellData]> {
+    return this.cells.entries();
   }
 
   overallStats(): { correct: number; total: number; times: number[] } {
     let correct = 0;
     let total = 0;
     const times: number[] = [];
-    for (const data of this.positions.values()) {
+    for (const data of this.cells.values()) {
       correct += data.correct;
       total += data.total;
       times.push(...data.times);
@@ -73,17 +73,17 @@ export class PositionStats {
 
   toAccuracyData(): AccuracyData {
     const data = new Map<string, { correct: number; total: number }>();
-    for (const [key, pos] of this.positions) {
-      data.set(key, { correct: pos.correct, total: pos.total });
+    for (const [key, cell] of this.cells) {
+      data.set(key, { correct: cell.correct, total: cell.total });
     }
     return data;
   }
 
   toTimingData(): TimingData {
     const data = new Map<string, number>();
-    for (const [key, pos] of this.positions) {
-      if (pos.times.length > 0) {
-        data.set(key, pos.times.reduce((a, b) => a + b, 0) / pos.times.length);
+    for (const [key, cell] of this.cells) {
+      if (cell.times.length > 0) {
+        data.set(key, cell.times.reduce((a, b) => a + b, 0) / cell.times.length);
       }
     }
     return data;
