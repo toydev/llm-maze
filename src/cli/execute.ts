@@ -64,6 +64,8 @@ async function runSingleExecution(
   }
 }
 
+type StructuredLLM = ReturnType<ChatOllama['withStructuredOutput']>;
+
 async function runExecution(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<Execution> {
   const maze = await Maze.fromFile(mazeFile);
   const llm = new ChatOllama({ model }).withStructuredOutput(MoveActionSchema);
@@ -74,30 +76,9 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
   const progress = new ProgressReporter(cells.length);
 
   for (const cell of cells) {
-    const correctMoves = maze.getGoalwardDirections(cell).map(toMove);
-    const prompt = strategy.build(maze, maze.getPathFromStart(cell));
-
-    const cellStartTime = Date.now();
-    let llmMove: Move | null = null;
-
-    try {
-      const llmResponse = MoveActionSchema.parse(await llm.invoke(prompt));
-      llmMove = llmResponse.move;
-    } catch (error) {
-      logger.error(`[${cell.x},${cell.y}] Error during LLM invocation:`, error);
-    }
-
-    const isCorrect = llmMove !== null && correctMoves.includes(llmMove);
-
-    cellResults.push({
-      position: cell,
-      isCorrect,
-      llmMove,
-      validMoves: correctMoves,
-      timeMs: Date.now() - cellStartTime,
-    });
-
-    progress.record(isCorrect);
+    const result = await evaluateCell(cell, maze, strategy, llm);
+    cellResults.push(result);
+    progress.record(result.isCorrect);
   }
 
   progress.finish();
@@ -115,6 +96,29 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
     totalTimeMs,
     averageTimePerCellMs: cells.length > 0 ? totalTimeMs / cells.length : 0,
     cellResults,
+  };
+}
+
+async function evaluateCell(cell: Position, maze: Maze, strategy: PromptStrategy, llm: StructuredLLM): Promise<CellResult> {
+  const correctMoves = maze.getGoalwardDirections(cell).map(toMove);
+  const prompt = strategy.build(maze, maze.getPathFromStart(cell));
+
+  const startTime = Date.now();
+  let llmMove: Move | null = null;
+
+  try {
+    const response = MoveActionSchema.parse(await llm.invoke(prompt));
+    llmMove = response.move;
+  } catch (error) {
+    logger.error(`[${cell.x},${cell.y}] Error during LLM invocation:`, error);
+  }
+
+  return {
+    position: cell,
+    isCorrect: llmMove !== null && correctMoves.includes(llmMove),
+    llmMove,
+    validMoves: correctMoves,
+    timeMs: Date.now() - startTime,
   };
 }
 
