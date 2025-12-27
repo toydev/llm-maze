@@ -3,7 +3,7 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { program } from 'commander';
 
-import { Executions, MoveActionSchema, directionToMove, type CellResult, type Execution, type Move, type MoveAction } from '@/execution/execution';
+import { DEFAULT_OUTPUT_DIR, Executions, MoveActionSchema, directionToMove, type CellResult, type Execution, type Move, type MoveAction } from '@/execution/execution';
 import { createLogger } from '@/logger/logger';
 import { CellType, Maze, type Position } from '@/maze/maze';
 import { Mazes } from '@/maze/mazes';
@@ -23,11 +23,12 @@ program
   .option('-z, --maze <pattern>', 'Maze file pattern (omit for all)')
   .option('-s, --strategy <name>', `Strategy name. Available: ${Object.keys(Strategies.all()).join(', ')}`)
   .option('-t, --times <number>', 'Number of runs per combination', parseInt, 1)
+  .option('-o, --output <dir>', 'Output directory', DEFAULT_OUTPUT_DIR)
   .option('--no-history', 'Exclude visit history from prompts')
   .option('--no-warmup', 'Skip warmup')
   .action(async (options) => {
     if (options.warmup) await warmupLLM(options.model);
-    await runAllExecutions(options.model, options.times, await Mazes.find(options.maze), Strategies.find(options.strategy), options.history);
+    await runAllExecutions(options.model, options.times, await Mazes.find(options.maze), Strategies.find(options.strategy), options.history, options.output);
   });
 
 program.parse();
@@ -38,12 +39,14 @@ async function runAllExecutions(
   mazeFiles: string[],
   strategies: Record<string, PromptStrategy>,
   includeHistory: boolean,
+  outputDir: string,
 ): Promise<void> {
   logger.info(`Model: ${model}`);
   logger.info(`Mazes: ${mazeFiles.join(', ')}`);
   logger.info(`Strategies: ${Object.keys(strategies).join(', ')}`);
   logger.info(`Times to run for each combination: ${times}`);
   logger.info(`Include history: ${includeHistory}`);
+  logger.info(`Output directory: ${outputDir}`);
 
   for (let i = 0; i < times; i++) {
     for (const mazeFile of mazeFiles) {
@@ -54,7 +57,7 @@ async function runAllExecutions(
 
         try {
           const execution = await runExecution(mazeFile, strategyName, strategy, model, includeHistory);
-          const savedPath = await Executions.save(execution);
+          const savedPath = await Executions.save(execution, outputDir);
           logger.info(`Saved: ${savedPath}`);
         } catch (error) {
           logger.error(`Failed: ${runInfo}`, error);
@@ -90,6 +93,7 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
     mazeFile: mazeFile.replace(/\\/g, '/'),
     modelName: model,
     strategyName,
+    includeHistory,
     cellResults,
   };
 }

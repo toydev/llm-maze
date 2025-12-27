@@ -34,6 +34,7 @@ export type Execution = {
   mazeFile: string;
   modelName: string;
   strategyName: string;
+  includeHistory: boolean;
   cellResults: CellResult[];
 };
 
@@ -41,13 +42,14 @@ export type ExecutionFilter = {
   model?: string;
   maze?: string;
   strategy?: string;
+  includeHistory?: boolean;
 };
 
-const EXECUTIONS_DIR = './output/executions';
+export const DEFAULT_OUTPUT_DIR = './output/executions';
 
 export class Executions {
-  static async all(): Promise<Execution[]> {
-    const yamlFiles = await findYamlFiles(EXECUTIONS_DIR);
+  static async all(outputDir = DEFAULT_OUTPUT_DIR): Promise<Execution[]> {
+    const yamlFiles = await findYamlFiles(outputDir);
     const executions: Execution[] = [];
     for (const file of yamlFiles) {
       const content = await fs.readFile(file, 'utf-8');
@@ -56,8 +58,8 @@ export class Executions {
     return executions;
   }
 
-  static async find(filter: ExecutionFilter): Promise<Execution[]> {
-    let executions = await this.all();
+  static async find(filter: ExecutionFilter, outputDir = DEFAULT_OUTPUT_DIR): Promise<Execution[]> {
+    let executions = await this.all(outputDir);
 
     if (filter.model) {
       executions = executions.filter((e) => e.modelName.includes(filter.model!));
@@ -68,18 +70,21 @@ export class Executions {
     if (filter.strategy) {
       executions = executions.filter((e) => e.strategyName === filter.strategy);
     }
+    if (filter.includeHistory !== undefined) {
+      executions = executions.filter((e) => e.includeHistory === filter.includeHistory);
+    }
 
     return executions;
   }
 
-  static async save(execution: Execution): Promise<string> {
+  static async save(execution: Execution, outputDir = DEFAULT_OUTPUT_DIR): Promise<string> {
     const timestamp = new Date().toISOString().replace(/:/g, '-');
     const modelId = execution.modelName.replace(/[:/]/g, '_');
     const mazeName = path.basename(execution.mazeFile, '.txt');
-    const outputDir = path.join(EXECUTIONS_DIR, modelId, execution.strategyName, mazeName);
-    await fs.mkdir(outputDir, { recursive: true });
+    const destDir = path.join(outputDir, modelId, execution.strategyName, mazeName);
+    await fs.mkdir(destDir, { recursive: true });
 
-    const filePath = path.join(outputDir, `${timestamp}.yaml`);
+    const filePath = path.join(destDir, `${timestamp}.yaml`);
     await fs.writeFile(filePath, yaml.stringify(execution));
     return filePath;
   }

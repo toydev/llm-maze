@@ -4,7 +4,7 @@ import { program } from 'commander';
 import prettyMs from 'pretty-ms';
 
 import { CellStats } from '@/execution/cell-stats';
-import { Executions, type Execution } from '@/execution/execution';
+import { DEFAULT_OUTPUT_DIR, Executions, type Execution } from '@/execution/execution';
 import { createLogger } from '@/logger/logger';
 import { Maze } from '@/maze/maze';
 import { renderAccuracyGrid } from '@/view/grid';
@@ -21,10 +21,14 @@ program
   .option('-m, --model <name>', 'Filter by model name')
   .option('-z, --maze <pattern>', 'Filter by maze name')
   .option('-s, --strategy <name>', 'Filter by strategy name')
+  .option('-o, --output <dir>', 'Output directory', DEFAULT_OUTPUT_DIR)
+  .option('-H, --history', 'Filter by history included')
+  .option('-N, --no-history', 'Filter by history excluded')
   .action(async (options) => {
     logger.info('Starting execution summary...');
 
-    const executions = await Executions.find({ model: options.model, maze: options.maze, strategy: options.strategy });
+    const includeHistory = options.history === true ? true : options.history === false ? false : undefined;
+    const executions = await Executions.find({ model: options.model, maze: options.maze, strategy: options.strategy, includeHistory }, options.output);
     if (executions.length === 0) {
       logger.warn('No executions found.');
       return;
