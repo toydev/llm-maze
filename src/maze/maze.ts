@@ -100,37 +100,6 @@ export class Maze {
     return cellType !== undefined && cellType !== CellType.Wall;
   }
 
-  private calculateDistancesToGoal(): DistanceMap {
-    const distances: DistanceMap = new Map();
-    const queue: Position[] = [this.goalPosition];
-    const goalKey = `${this.goalPosition.x},${this.goalPosition.y}`;
-
-    distances.set(goalKey, 0);
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      const currentKey = `${current.x},${current.y}`;
-      const currentDistance = distances.get(currentKey)!;
-
-      const neighbors: Position[] = [
-        { x: current.x, y: current.y - 1 }, // up
-        { x: current.x, y: current.y + 1 }, // down
-        { x: current.x - 1, y: current.y }, // left
-        { x: current.x + 1, y: current.y }, // right
-      ];
-
-      for (const neighbor of neighbors) {
-        const neighborKey = `${neighbor.x},${neighbor.y}`;
-        if (this.isWalkable(neighbor) && !distances.has(neighborKey)) {
-          distances.set(neighborKey, currentDistance + 1);
-          queue.push(neighbor);
-        }
-      }
-    }
-
-    return distances;
-  }
-
   public getGoalwardDirections(position: Position): Direction[] {
     if (!this.distancesToGoal) {
       this.distancesToGoal = this.calculateDistancesToGoal();
@@ -162,6 +131,46 @@ export class Maze {
     }
 
     return directions;
+  }
+
+  public getPathFromStart(position: Position): Position[] {
+    if (!this.pathsFromStart) {
+      this.pathsFromStart = this.calculatePathsFromStart();
+    }
+
+    const posKey = `${position.x},${position.y}`;
+    return this.pathsFromStart.get(posKey) ?? [position];
+  }
+
+  private calculateDistancesToGoal(): DistanceMap {
+    const distances: DistanceMap = new Map();
+    const queue: Position[] = [this.goalPosition];
+    const goalKey = `${this.goalPosition.x},${this.goalPosition.y}`;
+
+    distances.set(goalKey, 0);
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const currentKey = `${current.x},${current.y}`;
+      const currentDistance = distances.get(currentKey)!;
+
+      const neighbors: Position[] = [
+        { x: current.x, y: current.y - 1 }, // up
+        { x: current.x, y: current.y + 1 }, // down
+        { x: current.x - 1, y: current.y }, // left
+        { x: current.x + 1, y: current.y }, // right
+      ];
+
+      for (const neighbor of neighbors) {
+        const neighborKey = `${neighbor.x},${neighbor.y}`;
+        if (this.isWalkable(neighbor) && !distances.has(neighborKey)) {
+          distances.set(neighborKey, currentDistance + 1);
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    return distances;
   }
 
   private calculatePathsFromStart(): Map<string, Position[]> {
@@ -218,14 +227,5 @@ export class Maze {
     }
 
     return pathMap;
-  }
-
-  public getPathFromStart(position: Position): Position[] {
-    if (!this.pathsFromStart) {
-      this.pathsFromStart = this.calculatePathsFromStart();
-    }
-
-    const posKey = `${position.x},${position.y}`;
-    return this.pathsFromStart.get(posKey) ?? [position];
   }
 }
