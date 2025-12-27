@@ -81,7 +81,7 @@ describe('Maze.getPathFromStart', () => {
     const maze = new Maze(layout);
 
     const pathToGoal = maze.getPathFromStart({ x: 3, y: 3 });
-    // Prioritizes axis with greater distance to reduce directional bias
+    // Reduces dependency on maze orientation
     // Expected: (1,1) -> (1,2) -> (2,2) -> (2,3) -> (3,3)
     expect(pathToGoal).toEqual([
       { x: 1, y: 1 },

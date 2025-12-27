@@ -187,7 +187,7 @@ export class Maze {
       const dx = Math.abs(this.goalPosition.x - current.x);
       const dy = Math.abs(this.goalPosition.y - current.y);
 
-      // Prioritize the axis with greater distance to goal to reduce directional bias
+      // Reduce dependency on maze orientation
       const neighbors: Position[] =
         dy >= dx
           ? [
