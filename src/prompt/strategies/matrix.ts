@@ -40,7 +40,7 @@ ${formatVisitHistory(history)}
 
 What is your next move from your current position?
 
-${COORDINATE_SYSTEM_NOTE} Matrix indexing is [y][x].
+${COORDINATE_SYSTEM_NOTE}
 
 ${RESPONSE_FORMAT_INSTRUCTION}
 `;
