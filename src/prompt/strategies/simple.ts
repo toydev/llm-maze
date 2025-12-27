@@ -14,7 +14,7 @@ export class SimplePromptStrategy implements PromptStrategy {
       .join('\n');
   }
 
-  public build(maze: Maze, history: Position[]): string {
+  public buildPrompt(maze: Maze, history: Position[]): string {
     const currentPosition = history[history.length - 1];
     const mazeString = this.renderMaze(maze, currentPosition);
 

@@ -88,7 +88,7 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
 
 async function evaluateCell(cell: Position, maze: Maze, strategy: PromptStrategy, llm: StructuredLLM): Promise<CellResult> {
   const correctMoves = maze.getGoalwardDirections(cell).map(toMove);
-  const prompt = strategy.build(maze, maze.getPathFromStart(cell));
+  const prompt = strategy.buildPrompt(maze, maze.getPathFromStart(cell));
 
   const startTime = Date.now();
   let llmMove: Move | null = null;

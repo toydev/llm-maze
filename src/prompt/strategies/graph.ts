@@ -36,7 +36,7 @@ export class GraphPromptStrategy implements PromptStrategy {
     return graph;
   }
 
-  public build(maze: Maze, history: Position[]): string {
+  public buildPrompt(maze: Maze, history: Position[]): string {
     const currentPosition = history[history.length - 1];
     const graph = this.generateGraph(maze);
     const graphString = JSON.stringify(graph, null, 2);

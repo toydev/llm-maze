@@ -17,7 +17,7 @@ export class MatrixPromptStrategy implements PromptStrategy {
     return matrix;
   }
 
-  public build(maze: Maze, history: Position[]): string {
+  public buildPrompt(maze: Maze, history: Position[]): string {
     const currentPosition = history[history.length - 1];
     const matrix = this.generateMatrix(maze);
     const matrixString = matrix.map((row) => JSON.stringify(row)).join(',\n');

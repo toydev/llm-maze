@@ -9,7 +9,7 @@ const history: Position[] = [{ x: 1, y: 1 }];
 describe('SimplePromptStrategy', () => {
   it('builds prompt with maze visualization', () => {
     const strategy = new SimplePromptStrategy();
-    const prompt = strategy.build(maze, history);
+    const prompt = strategy.buildPrompt(maze, history);
 
     expect(prompt).toBe(`
 You are a bot in a 2D maze. Your goal is to find the path from 'S' (Start) to 'G' (Goal).

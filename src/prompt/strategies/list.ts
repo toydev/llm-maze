@@ -17,7 +17,7 @@ export class ListPromptStrategy implements PromptStrategy {
     return walkable;
   }
 
-  public build(maze: Maze, history: Position[]): string {
+  public buildPrompt(maze: Maze, history: Position[]): string {
     const currentPosition = history[history.length - 1];
     const walkableList = this.generateWalkableList(maze);
 
