@@ -37,30 +37,19 @@ async function runAllExecutions(model: string, times: number, mazeFiles: string[
   for (let i = 0; i < times; i++) {
     for (const mazeFile of mazeFiles) {
       for (const [strategyName, strategy] of strategies) {
-        await runSingleExecution(model, mazeFile, strategyName, strategy, i + 1, times);
+        const mazeName = path.basename(mazeFile, '.txt');
+        const runInfo = `[${i + 1}/${times}] ${model} / ${mazeName} / ${strategyName}`;
+        process.stdout.write(`\n${runInfo}\n`);
+
+        try {
+          const execution = await runExecution(mazeFile, strategyName, strategy, model);
+          const savedPath = await Executions.save(execution);
+          logger.info(`Saved: ${savedPath}`);
+        } catch (error) {
+          logger.error(`Failed: ${runInfo}`, error);
+        }
       }
     }
-  }
-}
-
-async function runSingleExecution(
-  model: string,
-  mazeFile: string,
-  strategyName: string,
-  strategy: PromptStrategy,
-  runIndex: number,
-  totalRuns: number,
-): Promise<void> {
-  const mazeName = path.basename(mazeFile, '.txt');
-  const runInfo = `[${runIndex}/${totalRuns}] ${model} / ${mazeName} / ${strategyName}`;
-  process.stdout.write(`\n${runInfo}\n`);
-
-  try {
-    const execution = await runExecution(mazeFile, strategyName, strategy, model);
-    const savedPath = await Executions.save(execution);
-    logger.info(`Saved: ${savedPath}`);
-  } catch (error) {
-    logger.error(`Failed: ${runInfo}`, error);
   }
 }
 
