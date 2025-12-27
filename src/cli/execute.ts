@@ -70,10 +70,9 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
   const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
 
   const cells = maze.getWalkableCells();
-  const cellCount = cells.length;
   const cellResults: CellResult[] = [];
   const startTime = Date.now();
-  const progress = new ProgressReporter(cellCount);
+  const progress = new ProgressReporter(cells.length);
 
   for (const cell of cells) {
     const correctMoves = maze.getGoalwardDirections(cell).map(toMove);
@@ -113,11 +112,11 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
     mazeFile: mazeFile.replace(/\\/g, '/'),
     modelName: model,
     strategyName,
-    totalCells: cellCount,
+    totalCells: cells.length,
     correctMoves: correctCount,
-    accuracy: cellCount > 0 ? (correctCount / cellCount) * 100 : 0,
+    accuracy: cells.length > 0 ? (correctCount / cells.length) * 100 : 0,
     totalTimeMs,
-    averageTimePerCellMs: cellCount > 0 ? totalTimeMs / cellCount : 0,
+    averageTimePerCellMs: cells.length > 0 ? totalTimeMs / cells.length : 0,
     cellResults,
   };
 }
