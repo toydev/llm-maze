@@ -26,6 +26,7 @@ export class Maze {
   public readonly goalPosition: Position;
   public readonly height: number;
   public readonly width: number;
+  public readonly pathCount: number;
   private distancesToGoal?: DistanceMap;
   private pathsFromStart?: Map<string, Position[]>;
 
@@ -47,6 +48,7 @@ export class Maze {
 
     let start: Position | null = null;
     let goal: Position | null = null;
+    let pathCount = 0;
 
     for (let y = 0; y < this.height; y++) {
       const row: CellType[] = [];
@@ -71,6 +73,7 @@ export class Maze {
           case ' ':
           default:
             cell = CellType.Path;
+            pathCount++;
             break;
         }
         row.push(cell);
@@ -82,6 +85,7 @@ export class Maze {
     if (!goal) throw new Error('No goal position found.');
     this.startPosition = start;
     this.goalPosition = goal;
+    this.pathCount = pathCount;
   }
 
   public getCellType(position: Position): CellType | undefined {
@@ -94,18 +98,6 @@ export class Maze {
   public isWalkable(position: Position): boolean {
     const cellType = this.getCellType(position);
     return cellType !== undefined && cellType !== CellType.Wall;
-  }
-
-  public getWalkableCells(): Position[] {
-    const cells: Position[] = [];
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        if (this.isWalkable({ x, y })) {
-          cells.push({ x, y });
-        }
-      }
-    }
-    return cells;
   }
 
   private calculateDistancesToGoal(): DistanceMap {

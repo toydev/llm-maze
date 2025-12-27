@@ -5,7 +5,7 @@ import { program } from 'commander';
 
 import { Executions, MoveActionSchema, toMove, type CellResult, type Execution, type Move } from '@/execution/execution';
 import { createLogger } from '@/logger/logger';
-import { Maze, type Position } from '@/maze/maze';
+import { CellType, Maze, type Position } from '@/maze/maze';
 import { Mazes } from '@/maze/mazes';
 import { Strategies } from '@/prompt/strategies';
 import { type PromptStrategy } from '@/prompt/strategy';
@@ -59,14 +59,18 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
   const maze = await Maze.fromFile(mazeFile);
   const llm = new ChatOllama({ model }).withStructuredOutput(MoveActionSchema);
 
-  const cells = maze.getWalkableCells();
   const cellResults: CellResult[] = [];
-  const progress = new ProgressReporter(cells.length);
+  const progress = new ProgressReporter(1 + maze.pathCount); // Start(1) + Path
 
-  for (const cell of cells) {
-    const result = await evaluateCell(cell, maze, strategy, llm);
-    cellResults.push(result);
-    progress.record(result.isCorrect);
+  for (let y = 0; y < maze.height; y++) {
+    for (let x = 0; x < maze.width; x++) {
+      const type = maze.getCellType({ x, y });
+      if (type !== CellType.Start && type !== CellType.Path) continue;
+
+      const result = await evaluateCell({ x, y }, maze, strategy, llm);
+      cellResults.push(result);
+      progress.record(result.isCorrect);
+    }
   }
 
   progress.finish();
