@@ -93,7 +93,7 @@
 
 - [ ] データディレクトリの整備
   - output/ は .gitignore（作業用）
-  - 別ディレクトリ（例: data/results/）に参考データをコミット
+  - samples/ に参考データをコミット
   - summary/detail コマンドが両方を読めるように対応
 - [ ] README.md（英語）作成
 - [ ] README.ja.md（日本語）作成
