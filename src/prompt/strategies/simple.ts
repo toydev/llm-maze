@@ -1,6 +1,5 @@
 import { Maze, Position } from '@/maze/maze';
-import { PromptStrategy } from '@/prompt/strategy';
-import { COORDINATE_SYSTEM_NOTE, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/template';
+import { COORDINATE_SYSTEM_NOTE, PromptStrategy, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/strategy';
 
 export class SimplePromptStrategy implements PromptStrategy {
   private renderMaze(maze: Maze, currentPosition: Position): string {
