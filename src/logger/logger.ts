@@ -3,30 +3,27 @@ import path from 'path';
 
 import log from 'loglevel';
 
-interface CustomLogger extends log.Logger {
-  customized?: boolean;
-}
-
 const isTest = process.env.VITEST === 'true';
 
 const LOG_DIR = path.join(process.cwd(), 'log');
 const LOG_FILE = path.join(LOG_DIR, isTest ? 'test.log' : 'maze.log');
 
-let initialized = false;
+let logDirInitialized = false;
+const customizedNames = new Set<string>();
 
-function ensureInitialized(): void {
-  if (initialized) return;
+function ensureLogDir(): void {
+  if (logDirInitialized) return;
   if (!fs.existsSync(LOG_DIR)) {
     fs.mkdirSync(LOG_DIR, { recursive: true });
   }
-  initialized = true;
+  logDirInitialized = true;
 }
 
 function createLogger(logname: string): log.Logger {
-  ensureInitialized();
-  const logger = log.getLogger(logname) as CustomLogger;
+  ensureLogDir();
+  const logger = log.getLogger(logname);
 
-  if (logger.customized) {
+  if (customizedNames.has(logname)) {
     return logger;
   }
 
@@ -55,7 +52,7 @@ function createLogger(logname: string): log.Logger {
     };
   };
 
-  logger.customized = true;
+  customizedNames.add(logname);
   logger.setLevel((process.env.LOG_LEVEL || 'info') as log.LogLevelDesc);
 
   return logger;
