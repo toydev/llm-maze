@@ -4,15 +4,15 @@ import { MatrixPromptStrategy } from './matrix';
 
 const layout = ['#####', '#S  #', '# # #', '#  G#', '#####'];
 const maze = new Maze(layout);
-const history: Position[] = [{ x: 1, y: 1 }];
+const current: Position = { x: 1, y: 1 };
+const history: Position[] = [current];
 
 describe('MatrixPromptStrategy', () => {
   it('builds prompt with binary matrix', () => {
     const strategy = new MatrixPromptStrategy();
-    const prompt = strategy.buildPrompt(maze, history);
+    const prompt = strategy.buildPrompt(maze, current, history);
 
-    expect(prompt).toBe(`
-You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
+    expect(prompt).toBe(`You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
 
 Matrix (1 = wall, 0 = path):
 [[1,1,1,1,1],
@@ -38,7 +38,6 @@ Note: In this coordinate system, y increases downward.
 - right: x+1
 
 Return your answer as a JSON object with a "move" key, which can be one of "up", "down", "left", or "right".
-Example: {"move": "up"}
-`);
+Example: {"move": "up"}`);
   });
 });

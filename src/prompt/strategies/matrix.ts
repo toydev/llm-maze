@@ -5,6 +5,7 @@ import {
   NEXT_MOVE_QUESTION,
   PromptStrategy,
   RESPONSE_FORMAT_INSTRUCTION,
+  formatPositions,
   formatVisitHistory,
 } from '@/prompt/strategy';
 
@@ -23,29 +24,23 @@ export class MatrixPromptStrategy implements PromptStrategy {
     return matrix;
   }
 
-  public buildPrompt(maze: Maze, history: Position[]): string {
-    const currentPosition = history[history.length - 1];
+  private formatMatrix(maze: Maze): string {
     const matrix = this.generateMatrix(maze);
     const matrixString = matrix.map((row) => JSON.stringify(row)).join(',\n');
+    return `Matrix (1 = wall, 0 = path):\n[${matrixString}]`;
+  }
 
-    return `
-${INTRODUCTION}
-
-Matrix (1 = wall, 0 = path):
-[${matrixString}]
-
-Positions:
-- Start: (${maze.startPosition.x},${maze.startPosition.y})
-- Goal: (${maze.goalPosition.x},${maze.goalPosition.y})
-- Current: (${currentPosition.x},${currentPosition.y})
-
-${formatVisitHistory(history)}
-
-${NEXT_MOVE_QUESTION}
-
-${COORDINATE_SYSTEM_NOTE}
-
-${RESPONSE_FORMAT_INSTRUCTION}
-`;
+  public buildPrompt(maze: Maze, current: Position, history: Position[] | null): string {
+    return [
+      INTRODUCTION,
+      this.formatMatrix(maze),
+      formatPositions(maze, current),
+      formatVisitHistory(history),
+      NEXT_MOVE_QUESTION,
+      COORDINATE_SYSTEM_NOTE,
+      RESPONSE_FORMAT_INSTRUCTION,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
   }
 }

@@ -1,14 +1,22 @@
-import { Position } from '@/maze/maze';
+import { Maze, Position } from '@/maze/maze';
 
 export interface PromptStrategy {
-  buildPrompt(maze: unknown, history: Position[]): string;
+  buildPrompt(maze: Maze, current: Position, history: Position[] | null): string;
 }
 
 // Prompt components in order of appearance:
 
 export const INTRODUCTION = `You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.`;
 
-export function formatVisitHistory(history: Position[]): string {
+export function formatPositions(maze: Maze, current: Position): string {
+  return `Positions:
+- Start: (${maze.startPosition.x},${maze.startPosition.y})
+- Goal: (${maze.goalPosition.x},${maze.goalPosition.y})
+- Current: (${current.x},${current.y})`;
+}
+
+export function formatVisitHistory(history: Position[] | null): string {
+  if (!history) return '';
   return `You have visited the following positions in order:
 ${history.map((p) => `(${p.x},${p.y})`).join(' -> ')}`;
 }

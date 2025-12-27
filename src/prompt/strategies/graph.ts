@@ -5,6 +5,7 @@ import {
   NEXT_MOVE_QUESTION,
   PromptStrategy,
   RESPONSE_FORMAT_INSTRUCTION,
+  formatPositions,
   formatVisitHistory,
 } from '@/prompt/strategy';
 
@@ -42,29 +43,23 @@ export class GraphPromptStrategy implements PromptStrategy {
     return graph;
   }
 
-  public buildPrompt(maze: Maze, history: Position[]): string {
-    const currentPosition = history[history.length - 1];
+  private formatGraph(maze: Maze): string {
     const graph = this.generateGraph(maze);
     const graphString = JSON.stringify(graph, null, 2);
+    return `Graph (adjacency list): each key "x,y" maps to adjacent walkable positions.\n${graphString}`;
+  }
 
-    return `
-${INTRODUCTION}
-
-Graph (adjacency list): each key "x,y" maps to adjacent walkable positions.
-${graphString}
-
-Positions:
-- Start: (${maze.startPosition.x},${maze.startPosition.y})
-- Goal: (${maze.goalPosition.x},${maze.goalPosition.y})
-- Current: (${currentPosition.x},${currentPosition.y})
-
-${formatVisitHistory(history)}
-
-${NEXT_MOVE_QUESTION}
-
-${COORDINATE_SYSTEM_NOTE}
-
-${RESPONSE_FORMAT_INSTRUCTION}
-`;
+  public buildPrompt(maze: Maze, current: Position, history: Position[] | null): string {
+    return [
+      INTRODUCTION,
+      this.formatGraph(maze),
+      formatPositions(maze, current),
+      formatVisitHistory(history),
+      NEXT_MOVE_QUESTION,
+      COORDINATE_SYSTEM_NOTE,
+      RESPONSE_FORMAT_INSTRUCTION,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
   }
 }

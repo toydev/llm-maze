@@ -23,19 +23,27 @@ program
   .option('-z, --maze <pattern>', 'Maze file pattern (omit for all)')
   .option('-s, --strategy <name>', `Strategy name. Available: ${Object.keys(Strategies.all()).join(', ')}`)
   .option('-t, --times <number>', 'Number of runs per combination', parseInt, 1)
+  .option('--no-history', 'Exclude visit history from prompts')
   .option('--no-warmup', 'Skip warmup (for external API services)')
   .action(async (options) => {
     if (options.warmup) await warmupLLM(options.model);
-    await runAllExecutions(options.model, options.times, await Mazes.find(options.maze), Strategies.find(options.strategy));
+    await runAllExecutions(options.model, options.times, await Mazes.find(options.maze), Strategies.find(options.strategy), options.history);
   });
 
 program.parse();
 
-async function runAllExecutions(model: string, times: number, mazeFiles: string[], strategies: Record<string, PromptStrategy>): Promise<void> {
+async function runAllExecutions(
+  model: string,
+  times: number,
+  mazeFiles: string[],
+  strategies: Record<string, PromptStrategy>,
+  includeHistory: boolean,
+): Promise<void> {
   logger.info(`Model: ${model}`);
   logger.info(`Mazes: ${mazeFiles.join(', ')}`);
   logger.info(`Strategies: ${Object.keys(strategies).join(', ')}`);
   logger.info(`Times to run for each combination: ${times}`);
+  logger.info(`Include history: ${includeHistory}`);
 
   for (let i = 0; i < times; i++) {
     for (const mazeFile of mazeFiles) {
@@ -45,7 +53,7 @@ async function runAllExecutions(model: string, times: number, mazeFiles: string[
         process.stdout.write(`\n${runInfo}\n`);
 
         try {
-          const execution = await runExecution(mazeFile, strategyName, strategy, model);
+          const execution = await runExecution(mazeFile, strategyName, strategy, model, includeHistory);
           const savedPath = await Executions.save(execution);
           logger.info(`Saved: ${savedPath}`);
         } catch (error) {
@@ -58,7 +66,7 @@ async function runAllExecutions(model: string, times: number, mazeFiles: string[
 
 type StructuredLLM = Runnable<BaseLanguageModelInput, MoveAction>;
 
-async function runExecution(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<Execution> {
+async function runExecution(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string, includeHistory: boolean): Promise<Execution> {
   const maze = await Maze.fromFile(mazeFile);
   const llm = new ChatOllama({ model }).withStructuredOutput(MoveActionSchema);
 
@@ -70,7 +78,7 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
       const type = maze.getCellType({ x, y });
       if (type !== CellType.Start && type !== CellType.Path) continue;
 
-      const result = await evaluateCell({ x, y }, maze, strategy, llm);
+      const result = await evaluateCell({ x, y }, maze, strategy, llm, includeHistory);
       cellResults.push(result);
       progress.record(result.isCorrect);
     }
@@ -86,9 +94,10 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
   };
 }
 
-async function evaluateCell(cell: Position, maze: Maze, strategy: PromptStrategy, llm: StructuredLLM): Promise<CellResult> {
+async function evaluateCell(cell: Position, maze: Maze, strategy: PromptStrategy, llm: StructuredLLM, includeHistory: boolean): Promise<CellResult> {
   const correctMoves = maze.getDirectionsToGoal(cell).map(directionToMove);
-  const prompt = strategy.buildPrompt(maze, maze.getPathFromStart(cell));
+  const history = includeHistory ? maze.getPathFromStart(cell) : null;
+  const prompt = strategy.buildPrompt(maze, cell, history);
 
   const startTime = Date.now();
   let llmMove: Move | null = null;
