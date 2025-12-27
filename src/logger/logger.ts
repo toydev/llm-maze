@@ -9,9 +9,8 @@ interface CustomLogger extends log.Logger {
 
 const isTest = process.env.VITEST === 'true';
 
-const LOG_BASE_DIR = path.join(process.cwd(), 'log');
-const LOG_DIR = isTest ? path.join(LOG_BASE_DIR, 'test') : LOG_BASE_DIR;
-const LOG_FILE = path.join(LOG_DIR, 'application.log');
+const LOG_DIR = path.join(process.cwd(), 'log');
+const LOG_FILE = path.join(LOG_DIR, isTest ? 'test.log' : 'maze.log');
 
 let initialized = false;
 
