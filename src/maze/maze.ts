@@ -100,7 +100,7 @@ export class Maze {
     return cellType !== undefined && cellType !== CellType.Wall;
   }
 
-  public getGoalwardDirections(position: Position): Direction[] {
+  public getDirectionsToGoal(position: Position): Direction[] {
     if (!this.distancesToGoal) {
       this.distancesToGoal = this.calculateDistancesToGoal();
     }
