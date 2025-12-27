@@ -104,7 +104,7 @@ async function evaluateCell(cell: Position, maze: Maze, strategy: PromptStrategy
     position: cell,
     isCorrect: llmMove !== null && correctMoves.includes(llmMove),
     llmMove,
-    validMoves: correctMoves,
+    correctMoves,
     timeMs: Date.now() - startTime,
   };
 }

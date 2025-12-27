@@ -26,7 +26,7 @@ export type CellResult = {
   position: Position;
   isCorrect: boolean;
   llmMove: Move | null;
-  validMoves: Move[];
+  correctMoves: Move[];
   timeMs?: number;
 };
 
