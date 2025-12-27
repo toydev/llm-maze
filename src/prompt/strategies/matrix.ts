@@ -1,5 +1,12 @@
 import { CellType, Maze, Position } from '@/maze/maze';
-import { COORDINATE_SYSTEM_NOTE, PromptStrategy, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/strategy';
+import {
+  COORDINATE_SYSTEM_NOTE,
+  INTRODUCTION,
+  NEXT_MOVE_QUESTION,
+  PromptStrategy,
+  RESPONSE_FORMAT_INSTRUCTION,
+  formatVisitHistory,
+} from '@/prompt/strategy';
 
 export class MatrixPromptStrategy implements PromptStrategy {
   private generateMatrix(maze: Maze): number[][] {
@@ -22,13 +29,9 @@ export class MatrixPromptStrategy implements PromptStrategy {
     const matrixString = matrix.map((row) => JSON.stringify(row)).join(',\n');
 
     return `
-You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
+${INTRODUCTION}
 
-The maze is represented as a 2D matrix where:
-- 1 = wall (impassable)
-- 0 = path (walkable)
-
-Maze Matrix:
+Matrix (1 = wall, 0 = path):
 [${matrixString}]
 
 Positions:
@@ -38,7 +41,7 @@ Positions:
 
 ${formatVisitHistory(history)}
 
-What is your next move from your current position?
+${NEXT_MOVE_QUESTION}
 
 ${COORDINATE_SYSTEM_NOTE}
 

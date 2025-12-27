@@ -1,5 +1,12 @@
 import { CellType, Maze, Position } from '@/maze/maze';
-import { COORDINATE_SYSTEM_NOTE, PromptStrategy, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/strategy';
+import {
+  COORDINATE_SYSTEM_NOTE,
+  INTRODUCTION,
+  NEXT_MOVE_QUESTION,
+  PromptStrategy,
+  RESPONSE_FORMAT_INSTRUCTION,
+  formatVisitHistory,
+} from '@/prompt/strategy';
 
 export class ListPromptStrategy implements PromptStrategy {
   private generateWalkableList(maze: Maze): string[] {
@@ -21,10 +28,9 @@ export class ListPromptStrategy implements PromptStrategy {
     const walkableList = this.generateWalkableList(maze);
 
     return `
-You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
+${INTRODUCTION}
 
-Walkable positions in the maze:
-${JSON.stringify(walkableList)}
+Walkable positions: ${JSON.stringify(walkableList)}
 
 Positions:
 - Start: (${maze.startPosition.x},${maze.startPosition.y})
@@ -33,8 +39,7 @@ Positions:
 
 ${formatVisitHistory(history)}
 
-What is your next move from your current position?
-You can only move to an adjacent walkable position (not diagonal).
+${NEXT_MOVE_QUESTION}
 
 ${COORDINATE_SYSTEM_NOTE}
 

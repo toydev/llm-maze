@@ -1,5 +1,12 @@
 import { Maze, Position } from '@/maze/maze';
-import { COORDINATE_SYSTEM_NOTE, PromptStrategy, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/strategy';
+import {
+  COORDINATE_SYSTEM_NOTE,
+  INTRODUCTION,
+  NEXT_MOVE_QUESTION,
+  PromptStrategy,
+  RESPONSE_FORMAT_INSTRUCTION,
+  formatVisitHistory,
+} from '@/prompt/strategy';
 
 type AdjacencyList = Record<string, string[]>;
 
@@ -41,23 +48,19 @@ export class GraphPromptStrategy implements PromptStrategy {
     const graphString = JSON.stringify(graph, null, 2);
 
     return `
-You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
+${INTRODUCTION}
 
-The maze is represented as a graph data structure (adjacency list).
-Each key is a "node" representing a walkable coordinate "x,y".
-The value is an array of "edges" to adjacent walkable coordinates.
-
-- Start position: "${maze.startPosition.x},${maze.startPosition.y}"
-- Goal position: "${maze.goalPosition.x},${maze.goalPosition.y}"
-- Your current position: "${currentPosition.x},${currentPosition.y}"
-
-Maze Graph:
+Graph (adjacency list): each key "x,y" maps to adjacent walkable positions.
 ${graphString}
+
+Positions:
+- Start: "${maze.startPosition.x},${maze.startPosition.y}"
+- Goal: "${maze.goalPosition.x},${maze.goalPosition.y}"
+- Current: "${currentPosition.x},${currentPosition.y}"
 
 ${formatVisitHistory(history)}
 
-Based on the graph, what is your next move from your current position?
-You can only move to an adjacent node connected by an edge.
+${NEXT_MOVE_QUESTION}
 
 ${COORDINATE_SYSTEM_NOTE}
 

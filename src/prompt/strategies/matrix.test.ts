@@ -14,11 +14,7 @@ describe('MatrixPromptStrategy', () => {
     expect(prompt).toBe(`
 You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
 
-The maze is represented as a 2D matrix where:
-- 1 = wall (impassable)
-- 0 = path (walkable)
-
-Maze Matrix:
+Matrix (1 = wall, 0 = path):
 [[1,1,1,1,1],
 [1,0,0,0,1],
 [1,0,1,0,1],

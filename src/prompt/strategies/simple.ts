@@ -1,5 +1,12 @@
 import { Maze, Position } from '@/maze/maze';
-import { COORDINATE_SYSTEM_NOTE, PromptStrategy, RESPONSE_FORMAT_INSTRUCTION, formatVisitHistory } from '@/prompt/strategy';
+import {
+  COORDINATE_SYSTEM_NOTE,
+  INTRODUCTION,
+  NEXT_MOVE_QUESTION,
+  PromptStrategy,
+  RESPONSE_FORMAT_INSTRUCTION,
+  formatVisitHistory,
+} from '@/prompt/strategy';
 
 export class SimplePromptStrategy implements PromptStrategy {
   private renderMaze(maze: Maze, currentPosition: Position): string {
@@ -18,16 +25,16 @@ export class SimplePromptStrategy implements PromptStrategy {
     const mazeString = this.renderMaze(maze, currentPosition);
 
     return `
-You are a bot in a 2D maze. Your goal is to find the path from 'S' (Start) to 'G' (Goal).
-'S' is the start, 'G' is the goal, '#' are walls, and ' ' are walkable paths.
-'C' is your current position.
+${INTRODUCTION}
+
+Legend: 'S' = Start, 'G' = Goal, '#' = Wall, ' ' = Path, 'C' = Current position
 
 Maze:
 ${mazeString}
 
 ${formatVisitHistory(history)}
 
-What is your next move? You can only move to adjacent (not diagonal) walkable paths.
+${NEXT_MOVE_QUESTION}
 
 ${COORDINATE_SYSTEM_NOTE}
 

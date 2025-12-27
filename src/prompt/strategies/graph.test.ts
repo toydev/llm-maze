@@ -14,15 +14,7 @@ describe('GraphPromptStrategy', () => {
     expect(prompt).toBe(`
 You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
 
-The maze is represented as a graph data structure (adjacency list).
-Each key is a "node" representing a walkable coordinate "x,y".
-The value is an array of "edges" to adjacent walkable coordinates.
-
-- Start position: "1,1"
-- Goal position: "3,3"
-- Your current position: "1,1"
-
-Maze Graph:
+Graph (adjacency list): each key "x,y" maps to adjacent walkable positions.
 {
   "1,1": [
     "1,2",
@@ -58,11 +50,15 @@ Maze Graph:
   ]
 }
 
+Positions:
+- Start: "1,1"
+- Goal: "3,3"
+- Current: "1,1"
+
 You have visited the following positions in order:
 (1,1)
 
-Based on the graph, what is your next move from your current position?
-You can only move to an adjacent node connected by an edge.
+What is your next move from your current position?
 
 Note: In this coordinate system, y increases downward.
 - up: y-1

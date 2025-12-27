@@ -12,9 +12,9 @@ describe('SimplePromptStrategy', () => {
     const prompt = strategy.buildPrompt(maze, history);
 
     expect(prompt).toBe(`
-You are a bot in a 2D maze. Your goal is to find the path from 'S' (Start) to 'G' (Goal).
-'S' is the start, 'G' is the goal, '#' are walls, and ' ' are walkable paths.
-'C' is your current position.
+You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
+
+Legend: 'S' = Start, 'G' = Goal, '#' = Wall, ' ' = Path, 'C' = Current position
 
 Maze:
 #####
@@ -26,7 +26,7 @@ Maze:
 You have visited the following positions in order:
 (1,1)
 
-What is your next move? You can only move to adjacent (not diagonal) walkable paths.
+What is your next move from your current position?
 
 Note: In this coordinate system, y increases downward.
 - up: y-1

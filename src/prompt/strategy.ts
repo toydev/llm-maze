@@ -4,6 +4,10 @@ export interface PromptStrategy {
   buildPrompt(maze: Maze, history: Position[]): string;
 }
 
+export const INTRODUCTION = `You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.`;
+
+export const NEXT_MOVE_QUESTION = `What is your next move from your current position?`;
+
 export const COORDINATE_SYSTEM_NOTE = `Note: In this coordinate system, y increases downward.
 - up: y-1
 - down: y+1

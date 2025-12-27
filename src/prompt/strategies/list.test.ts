@@ -14,8 +14,7 @@ describe('ListPromptStrategy', () => {
     expect(prompt).toBe(`
 You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
 
-Walkable positions in the maze:
-["(1,1)","(2,1)","(3,1)","(1,2)","(3,2)","(1,3)","(2,3)","(3,3)"]
+Walkable positions: ["(1,1)","(2,1)","(3,1)","(1,2)","(3,2)","(1,3)","(2,3)","(3,3)"]
 
 Positions:
 - Start: (1,1)
@@ -26,7 +25,6 @@ You have visited the following positions in order:
 (1,1)
 
 What is your next move from your current position?
-You can only move to an adjacent walkable position (not diagonal).
 
 Note: In this coordinate system, y increases downward.
 - up: y-1
