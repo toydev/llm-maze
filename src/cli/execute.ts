@@ -21,7 +21,7 @@ program
   .description('Evaluate LLM maze-solving ability')
   .requiredOption('-m, --model <name>', 'Ollama model name (e.g., gpt-oss, gemma3:latest)')
   .option('-z, --maze <pattern>', 'Maze file pattern (omit for all)')
-  .option('-s, --strategy <name>', `Strategy name. Available: ${Strategies.names().join(', ')}`)
+  .option('-s, --strategy <name>', `Strategy name. Available: ${Object.keys(Strategies.all()).join(', ')}`)
   .option('-t, --times <number>', 'Number of runs per combination', parseInt, 1)
   .option('--no-warmup', 'Skip warmup (for external API services)')
   .action(async (options) => {
@@ -31,15 +31,15 @@ program
 
 program.parse();
 
-async function runAllExecutions(model: string, times: number, mazeFiles: string[], strategies: [string, PromptStrategy][]): Promise<void> {
+async function runAllExecutions(model: string, times: number, mazeFiles: string[], strategies: Record<string, PromptStrategy>): Promise<void> {
   logger.info(`Model: ${model}`);
   logger.info(`Mazes: ${mazeFiles.join(', ')}`);
-  logger.info(`Strategies: ${strategies.map(([name]) => name).join(', ')}`);
+  logger.info(`Strategies: ${Object.keys(strategies).join(', ')}`);
   logger.info(`Times to run for each combination: ${times}`);
 
   for (let i = 0; i < times; i++) {
     for (const mazeFile of mazeFiles) {
-      for (const [strategyName, strategy] of strategies) {
+      for (const [strategyName, strategy] of Object.entries(strategies)) {
         const mazeName = path.basename(mazeFile, '.txt');
         const runInfo = `[${i + 1}/${times}] ${model} / ${mazeName} / ${strategyName}`;
         process.stdout.write(`\n${runInfo}\n`);
