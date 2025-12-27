@@ -54,9 +54,9 @@ Graph (adjacency list): each key "x,y" maps to adjacent walkable positions.
 ${graphString}
 
 Positions:
-- Start: "${maze.startPosition.x},${maze.startPosition.y}"
-- Goal: "${maze.goalPosition.x},${maze.goalPosition.y}"
-- Current: "${currentPosition.x},${currentPosition.y}"
+- Start: (${maze.startPosition.x},${maze.startPosition.y})
+- Goal: (${maze.goalPosition.x},${maze.goalPosition.y})
+- Current: (${currentPosition.x},${currentPosition.y})
 
 ${formatVisitHistory(history)}
 

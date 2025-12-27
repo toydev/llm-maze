@@ -51,9 +51,9 @@ Graph (adjacency list): each key "x,y" maps to adjacent walkable positions.
 }
 
 Positions:
-- Start: "1,1"
-- Goal: "3,3"
-- Current: "1,1"
+- Start: (1,1)
+- Goal: (3,3)
+- Current: (1,1)
 
 You have visited the following positions in order:
 (1,1)
