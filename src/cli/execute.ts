@@ -61,7 +61,6 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
 
   const cells = maze.getWalkableCells();
   const cellResults: CellResult[] = [];
-  const startTime = Date.now();
   const progress = new ProgressReporter(cells.length);
 
   for (const cell of cells) {
@@ -72,18 +71,10 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
 
   progress.finish();
 
-  const correctCount = cellResults.filter((r) => r.isCorrect).length;
-  const totalTimeMs = Date.now() - startTime;
-
   return {
     mazeFile: mazeFile.replace(/\\/g, '/'),
     modelName: model,
     strategyName,
-    totalCells: cells.length,
-    correctMoves: correctCount,
-    accuracy: cells.length > 0 ? (correctCount / cells.length) * 100 : 0,
-    totalTimeMs,
-    averageTimePerCellMs: cells.length > 0 ? totalTimeMs / cells.length : 0,
     cellResults,
   };
 }
