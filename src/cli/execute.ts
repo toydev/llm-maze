@@ -19,12 +19,12 @@ const logger = createLogger('execute');
 program
   .name('execute')
   .description('Evaluate LLM maze-solving ability')
-  .requiredOption('-m, --model <name>', 'Ollama model name (e.g., gpt-oss, gemma3:latest)')
+  .requiredOption('-m, --model <name>', 'Ollama model name (e.g., gpt-oss:20b)')
   .option('-z, --maze <pattern>', 'Maze file pattern (omit for all)')
   .option('-s, --strategy <name>', `Strategy name. Available: ${Object.keys(Strategies.all()).join(', ')}`)
   .option('-t, --times <number>', 'Number of runs per combination', parseInt, 1)
   .option('--no-history', 'Exclude visit history from prompts')
-  .option('--no-warmup', 'Skip warmup (for external API services)')
+  .option('--no-warmup', 'Skip warmup')
   .action(async (options) => {
     if (options.warmup) await warmupLLM(options.model);
     await runAllExecutions(options.model, options.times, await Mazes.find(options.maze), Strategies.find(options.strategy), options.history);
