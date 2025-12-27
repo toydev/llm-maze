@@ -3,7 +3,7 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { program } from 'commander';
 
-import { Executions, MoveActionSchema, toMove, type CellResult, type Execution, type Move, type MoveAction } from '@/execution/execution';
+import { Executions, MoveActionSchema, directionToMove, type CellResult, type Execution, type Move, type MoveAction } from '@/execution/execution';
 import { createLogger } from '@/logger/logger';
 import { CellType, Maze, type Position } from '@/maze/maze';
 import { Mazes } from '@/maze/mazes';
@@ -87,7 +87,7 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
 }
 
 async function evaluateCell(cell: Position, maze: Maze, strategy: PromptStrategy, llm: StructuredLLM): Promise<CellResult> {
-  const correctMoves = maze.getGoalwardDirections(cell).map(toMove);
+  const correctMoves = maze.getGoalwardDirections(cell).map(directionToMove);
   const prompt = strategy.buildPrompt(maze, maze.getPathFromStart(cell));
 
   const startTime = Date.now();

@@ -14,7 +14,7 @@ export const MoveActionSchema = z.object({
 });
 export type MoveAction = z.infer<typeof MoveActionSchema>;
 
-export function toMove(direction: Direction): Move {
+export function directionToMove(direction: Direction): Move {
   if (direction.dx === 0 && direction.dy === -1) return 'up';
   if (direction.dx === 0 && direction.dy === 1) return 'down';
   if (direction.dx === -1 && direction.dy === 0) return 'left';
