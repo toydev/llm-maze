@@ -3,13 +3,16 @@ import path from 'path';
 import { ChatOllama } from '@langchain/ollama';
 import { program } from 'commander';
 
-import { Executions, MoveActionSchema, toMove, type CellResult, type Execution, type Move } from '@/execution/execution';
+import { Executions, MoveActionSchema, toMove, type CellResult, type Execution, type Move, type MoveAction } from '@/execution/execution';
 import { createLogger } from '@/logger/logger';
 import { CellType, Maze, type Position } from '@/maze/maze';
 import { Mazes } from '@/maze/mazes';
 import { Strategies } from '@/prompt/strategies';
 import { type PromptStrategy } from '@/prompt/strategy';
 import { ProgressReporter } from '@/view/progress';
+
+import type { BaseLanguageModelInput } from '@langchain/core/language_models/base';
+import type { Runnable } from '@langchain/core/runnables';
 
 const logger = createLogger('execute');
 
@@ -53,7 +56,7 @@ async function runAllExecutions(model: string, times: number, mazeFiles: string[
   }
 }
 
-type StructuredLLM = ReturnType<ChatOllama['withStructuredOutput']>;
+type StructuredLLM = Runnable<BaseLanguageModelInput, MoveAction>;
 
 async function runExecution(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<Execution> {
   const maze = await Maze.fromFile(mazeFile);
@@ -91,7 +94,7 @@ async function evaluateCell(cell: Position, maze: Maze, strategy: PromptStrategy
   let llmMove: Move | null = null;
 
   try {
-    const response = MoveActionSchema.parse(await llm.invoke(prompt));
+    const response = await llm.invoke(prompt);
     llmMove = response.move;
   } catch (error) {
     logger.error(`[${cell.x},${cell.y}] Error during LLM invocation:`, error);
