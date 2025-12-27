@@ -66,8 +66,7 @@ async function runSingleExecution(
 
 async function runExecution(mazeFile: string, strategyName: string, strategy: PromptStrategy, model: string): Promise<Execution> {
   const maze = await Maze.fromFile(mazeFile);
-  const llm = new ChatOllama({ model });
-  const structuredLlm = llm.withStructuredOutput(MoveActionSchema);
+  const llm = new ChatOllama({ model }).withStructuredOutput(MoveActionSchema);
 
   const cells = maze.getWalkableCells();
   const cellResults: CellResult[] = [];
@@ -76,21 +75,19 @@ async function runExecution(mazeFile: string, strategyName: string, strategy: Pr
 
   for (const cell of cells) {
     const correctMoves = maze.getGoalwardDirections(cell).map(toMove);
-    const correctMoveSet = new Set(correctMoves);
-    const history = maze.getPathFromStart(cell);
-    const prompt = strategy.build(maze, history);
+    const prompt = strategy.build(maze, maze.getPathFromStart(cell));
 
     const cellStartTime = Date.now();
     let llmMove: Move | null = null;
 
     try {
-      const llmResponse = MoveActionSchema.parse(await structuredLlm.invoke(prompt));
+      const llmResponse = MoveActionSchema.parse(await llm.invoke(prompt));
       llmMove = llmResponse.move;
     } catch (error) {
       logger.error(`[${cell.x},${cell.y}] Error during LLM invocation:`, error);
     }
 
-    const isCorrect = llmMove !== null && correctMoveSet.has(llmMove);
+    const isCorrect = llmMove !== null && correctMoves.includes(llmMove);
 
     cellResults.push({
       position: cell,
