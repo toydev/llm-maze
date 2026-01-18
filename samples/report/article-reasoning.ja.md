@@ -3,7 +3,7 @@ title: 魔法じゃない、愚直な思考 ― LLM の Reasoning を覗く
 tags: LLM Ollama ローカルLLM Reasoning 生成AI
 ---
 
-# 1. はじめに
+## 1. はじめに
 
 LLM の Reasoning 機能をご存じですか？
 つい先日まで私は全く知りませんでした！これがすごいのです。
@@ -32,7 +32,7 @@ Reasoning 機能を持つモデルでは、これを1回の問い合わせで自
 
 ----
 
-# 2. Reasoning の使い方
+## 2. Reasoning の使い方
 
 迷路実験の結果を見る前に、Reasoning の基本的な使い方を確認しましょう。
 
@@ -98,7 +98,7 @@ The user asks: "太郎は花子より年上で、花子は次郎より年上で�
 
 ----
 
-# 3. 迷路実験で思考を覗く
+## 3. 迷路実験で思考を覗く
 
 では、迷路実験での Reasoning を見ていきましょう。
 
@@ -130,8 +130,8 @@ S はスタート、G はゴール、# は壁です。
 
 紹介する例は、何度か試して理解しやすいものを選んでいます。ご了承ください。
 
-## list の Reasoning 結果
-### プロンプト
+### list の Reasoning 結果
+#### プロンプト
 ```
 You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
 
@@ -157,7 +157,7 @@ Return your answer as a JSON object with a "move" key, which can be one of "up",
 Example: {"move": "up"}
 ```
 
-### 思考内容
+#### 思考内容
 ```
 We have a maze positions: (1,1),(3,1),(1,2),(3,2),(1,3),(2,3),(3,3). Start at (1,1) visited sequence: (1,1)->(1,2)->(1,3)->(2,3). Current (2,3). Goal is (3,1). We need to decide next move. We have visited positions in order; need to find path to goal. Let's examine adjacency.
 
@@ -174,8 +174,8 @@ So path: (2,3)->(3,3)->(3,2)->(3,1).
 Thus next move from (2,3) should be right to (3,3). So answer: {"move": "right"}.
 ```
 
-## graph の Reasoning 結果
-### プロンプト
+### graph の Reasoning 結果
+#### プロンプト
 ```
 ... 省略 ...
 
@@ -193,13 +193,13 @@ Graph (adjacency list): each key "x,y" maps to adjacent walkable positions.
 ... 省略 ...
 ```
 
-### 思考内容
+#### 思考内容
 ```
 We need to find next move from current position (2,3). Maze positions: graph edges show adjacency. Current at (2,3) has adjacent: "1,3" and "3,3". We have visited: (1,1)->(1,2)->(1,3)->(2,3). So visited positions set includes those. We want next move that hasn't been visited yet? Usually path search avoiding revisiting. So from (2,3) options: (1,3) visited, (3,3) unvisited. So next move: go right to (3,3). That will bring closer to goal (3,1). So answer: {"move":"right"}. Ensure JSON.
 ```
 
-## simple の Reasoning 結果
-### プロンプト
+### simple の Reasoning 結果
+#### プロンプト
 ```
 ... 省略 ...
 
@@ -215,7 +215,7 @@ Maze:
 ... 省略 ...
 ```
 
-### 思考内容
+#### 思考内容
 ```
 We need to parse the maze and determine positions. The maze:
 
@@ -252,7 +252,7 @@ Return JSON.
 
 ----
 
-# 4. 魔法じゃない、愚直な思考
+## 4. 魔法じゃない、愚直な思考
 
 私は Reasoning の思考内容を見るまでは魔法のような何かが行われていると勘違いしていました。
 しかし、思考内容を見た今、Reasoning は魔法ではありません。
@@ -287,7 +287,7 @@ Reasoning 機能をローカル LLM で気軽に試せる時代になってい�
 
 ----
 
-# 余談
+## 余談
 
 実際の思考内容を見ることで、プロンプト戦略が与える影響や list が最速・高精度な理由の理解が進みました。
 

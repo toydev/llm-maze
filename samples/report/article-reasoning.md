@@ -3,7 +3,7 @@ title: Not Magic, Just Diligent Thinking — Peeking into LLM Reasoning
 tags: LLM, Ollama, LocalLLM, Reasoning, AI
 ---
 
-# 1. Introduction
+## 1. Introduction
 
 Have you heard of the LLM Reasoning feature?
 I had no idea about it until recently — and it's impressive!
@@ -32,7 +32,7 @@ Seeing is believing — I gained a clear understanding of how the Reasoning feat
 
 ----
 
-# 2. How to Use Reasoning
+## 2. How to Use Reasoning
 
 Before looking at the maze experiment results, let's confirm the basic usage of Reasoning.
 
@@ -98,7 +98,7 @@ Since Alice > Bob > Charlie, Alice is the oldest of the three.
 
 ----
 
-# 3. Peeking into Reasoning During Maze Experiments
+## 3. Peeking into Reasoning During Maze Experiments
 
 Now let's look at Reasoning in the maze experiments.
 
@@ -130,8 +130,8 @@ You'll begin to see why these results occurred.
 
 Note: The examples shown were selected from multiple runs for clarity.
 
-## Reasoning Result for `list`
-### Prompt
+### Reasoning Result for `list`
+#### Prompt
 ```
 You are a bot in a 2D maze. Your goal is to find the path from Start to Goal.
 
@@ -157,7 +157,7 @@ Return your answer as a JSON object with a "move" key, which can be one of "up",
 Example: {"move": "up"}
 ```
 
-### Thinking Content
+#### Thinking Content
 ```
 We have a maze positions: (1,1),(3,1),(1,2),(3,2),(1,3),(2,3),(3,3). Start at (1,1) visited sequence: (1,1)->(1,2)->(1,3)->(2,3). Current (2,3). Goal is (3,1). We need to decide next move. We have visited positions in order; need to find path to goal. Let's examine adjacency.
 
@@ -174,8 +174,8 @@ So path: (2,3)->(3,3)->(3,2)->(3,1).
 Thus next move from (2,3) should be right to (3,3). So answer: {"move": "right"}.
 ```
 
-## Reasoning Result for `graph`
-### Prompt
+### Reasoning Result for `graph`
+#### Prompt
 ```
 ... omitted ...
 
@@ -193,13 +193,13 @@ Graph (adjacency list): each key "x,y" maps to adjacent walkable positions.
 ... omitted ...
 ```
 
-### Thinking Content
+#### Thinking Content
 ```
 We need to find next move from current position (2,3). Maze positions: graph edges show adjacency. Current at (2,3) has adjacent: "1,3" and "3,3". We have visited: (1,1)->(1,2)->(1,3)->(2,3). So visited positions set includes those. We want next move that hasn't been visited yet? Usually path search avoiding revisiting. So from (2,3) options: (1,3) visited, (3,3) unvisited. So next move: go right to (3,3). That will bring closer to goal (3,1). So answer: {"move":"right"}. Ensure JSON.
 ```
 
-## Reasoning Result for `simple`
-### Prompt
+### Reasoning Result for `simple`
+#### Prompt
 ```
 ... omitted ...
 
@@ -215,7 +215,7 @@ Maze:
 ... omitted ...
 ```
 
-### Thinking Content
+#### Thinking Content
 ```
 We need to parse the maze and determine positions. The maze:
 
@@ -252,7 +252,7 @@ Return JSON.
 
 ----
 
-# 4. Not Magic, Just Diligent Thinking
+## 4. Not Magic, Just Diligent Thinking
 
 Until I saw Reasoning's thinking content, I mistakenly believed some kind of magic was happening.
 But now that I've seen it, Reasoning is not magic.
@@ -287,7 +287,7 @@ If you're interested, try running it and peek into Reasoning's thinking content.
 
 ----
 
-# Digression
+## Digression
 
 By actually viewing the thinking content, I gained a deeper understanding of how prompt strategies affect results and why `list` is the fastest and most accurate.
 
