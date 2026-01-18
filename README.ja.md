@@ -61,6 +61,7 @@ npm run execute -- -m gpt-oss:20b -z 5x5_corridor_straight -s list
 | `npm run execute -- -m <model> [-z maze] [-s strategy] [-H\|-N]` | LLM 実行・結果保存 |
 | `npm run analyze -- [-m model] [-z maze] [-s strategy] [-H\|-N]` | マス毎の詳細分析 |
 | `npm run export-stats -- [-o output]` | CSV エクスポート（Excel ピボット / [Miller](https://miller.readthedocs.io/) 分析用） |
+| `npm run reasoning-test -- -z <maze> -s <strategy> -p <x,y> [-m model] [-t think] [-H]` | Reasoning 機能の効果確認用 |
 
 オプション省略時は全件対象。`-H` は履歴あり、`-N` は履歴なし（execute: 実行モード、analyze: フィルタ）。
 
@@ -78,6 +79,12 @@ npm run analyze -- -z 11x11_corridor_straight
 
 # CSV エクスポート（標準出力）
 npm run export-stats > stats.csv
+
+# Reasoning の思考内容を確認
+npm run reasoning-test -- -z 5x5_corridor_straight -s list -p 2,3
+
+# think レベル指定（gpt-oss は low/medium/high）
+npm run reasoning-test -- -z 5x5_corridor_straight -s list -p 2,3 -t high
 ```
 
 ## Directory Structure

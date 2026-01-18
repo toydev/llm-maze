@@ -11,7 +11,8 @@
     "test": "vitest",
     "execute": "vite-node src/cli/execute.ts",
     "analyze": "vite-node src/cli/analyze.ts",
-    "export-stats": "vite-node src/cli/export-stats.ts"
+    "export-stats": "vite-node src/cli/export-stats.ts",
+    "reasoning-test": "vite-node src/cli/reasoning-test.ts"
   },
   "dependencies": {
     "@langchain/ollama": "^1.1.0",
